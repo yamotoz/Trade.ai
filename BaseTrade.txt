@@ -1,0 +1,228 @@
+# Trade.ai
+ Criação de um aplicativo voltado ao mercado financeiro
+
+
+/trade-ai
+  /app
+    /login (tela de login inicial)
+    /home (tela inicial com gráficos e ativos principais)
+    /ativos (listagem e detalhes de ativos)
+    /operacao (simulador de trading)
+    /noticias (feed de notícias)
+    /perfil (configurações do usuário)
+  /components (botões, cards, navbar, gráficos)
+  /lib (funções de integração com supabase)
+  /styles (configurações de Tailwind)
+
+
+📘 PRD – Trade.ai
+
+Versão 1.0 – MVP
+
+🎯 Objetivo do App
+
+O Trade.ai é um aplicativo educacional e de simulação para iniciantes e intermediários (18–30 anos) no mercado financeiro.
+O app permite simular trades em tempo real com ativos reais (dados de APIs externas), acompanhar notícias do mercado, aprender através da aba Estudos, e acompanhar estatísticas pessoais.
+
+🖼️ UX/UI & Design
+
+Estilo: Minimalista, moderno, profissional.
+
+Cores: Preto como base, Azul Escuro padrão.
+
+Configuração de temas opcionais → Rosa, Verde, Branco (detalhes apenas, fundo sempre preto).
+
+Ícones: Minimalistas e elegantes.
+
+Animação de abertura: Logo do Trade.ai com efeito animado (movimento elegante).
+
+Navbar inferior (5 abas):
+
+Home
+
+Ativos
+
+Operação (principal, central, em destaque)
+
+Notícias
+
+Estudos
+
+🔑 Autenticação e Contas
+
+Cadastro: Nome, Email, Senha.
+
+Login: Email + Senha.
+
+Login social: Google.
+
+Confirmação de idade: checkbox obrigatório (+18).
+
+Recuperação de conta: via Email.
+
+📲 Funcionalidades por Aba
+1. Home
+
+“Bem-vindo, [Nome do Usuário]”.
+
+Preview enfileirado de ativos (simples).
+
+Abaixo: gráficos categorizados (Ações, Criptos, Forex).
+
+Configuração: preview simples ou gráfico expandido.
+
+Aba Perfil acessível dentro da Home:
+
+Estatísticas → taxa de acerto, total ganho/perdido.
+
+Configuração de tema (azul padrão, opções de rosa/verde/branco).
+
+Mudança de plano de perfil (free/premium futuro).
+
+2. Ativos
+
+Listagem de ativos em tempo real.
+
+Foco em Cripto, Forex e Ações.
+
+Ao clicar em um ativo → tela com:
+
+Gráfico interativo TradingView.
+
+Dados do ativo em tempo real.
+
+Opção de adicionar aos favoritos.
+
+Exibição de anúncios (AdMob).
+
+3. Operação (Simulador – Aba Central)
+
+Saldo inicial: $10.000 fixo.
+
+Bônus diário: +250$ ao logar.
+
+Gráfico em tela cheia (TradingView).
+
+Funções:
+
+Comprar/Vender ativo.
+
+Histórico de operações.
+
+Indicadores técnicos:
+
+Média móvel
+
+RSI
+
+MACD
+
+Bandas de Bollinger
+
+Configuração de Stop Loss e Take Profit.
+
+Estrutura já preparada para IA futura:
+
+Ícone/botão “IA” (não visível no MVP).
+
+Backend preparado para prever direção (compra/venda).
+
+4. Notícias
+
+Feed de notícias do mercado.
+
+Categorias: Cripto, Forex, Ações.
+
+Fonte: APIs externas (Yahoo Finance, CoinDesk etc.).
+
+Exibição de anúncios (AdMob).
+
+5. Estudos
+
+Conteúdo educacional adicionado gradualmente (textos, artigos, vídeos).
+
+Organização por tópicos → “Básico”, “Intermediário”, “Avançado”.
+
+Exibição de anúncios (AdMob).
+
+⚙️ Funcionalidades Técnicas
+
+Gráficos:
+
+Home → Recharts (preview).
+
+Ativos/Operação → TradingView widget.
+
+APIs de Dados:
+
+Yahoo Finance, Alpha Vantage, Binance (tempo real).
+
+Offline:
+
+App funciona exibindo últimos dados cacheados.
+
+Segurança:
+
+Login seguro via Supabase Auth.
+
+Recuperação de senha por email.
+
+Monetização:
+
+MVP → Google AdMob (em Ativos, Notícias e Estudos).
+
+Futuro → Plano Premium (estatísticas avançadas, IA, alertas de preço).
+
+🛠️ Stack de Desenvolvimento
+
+Framework: Expo (React Native + Next.js compatível)
+
+Banco/Auth: Supabase (Postgres + Auth + Storage)
+
+UI: Tailwind (via NativeWind no Expo)
+
+Gráficos: Recharts (Home) + TradingView widget (Ativos/Operação)
+
+Deploy: Play Store (Android primeiro)
+
+Ads: Google AdMob
+
+📅 Roadmap
+
+Fase 1 – MVP (3 meses)
+
+Login/Auth
+
+Home (preview + gráficos)
+
+Ativos com TradingView
+
+Operação (saldo fixo + bônus diário, indicadores básicos, histórico)
+
+Notícias com API
+
+Estudos (conteúdo inicial)
+
+Ads integrados
+
+Fase 2 – Personalização (3–4 meses)
+
+Favoritos
+
+Estatísticas detalhadas
+
+Modo Offline refinado
+
+Mais temas de interface
+
+Fase 3 – Monetização Premium (6 meses)
+
+Alertas de preço
+
+Estatísticas avançadas
+
+Remoção de anúncios
+
+Fase 4 – IA (12 meses)
+
+IA de sugestão de compra/venda (sinais em tempo real).
