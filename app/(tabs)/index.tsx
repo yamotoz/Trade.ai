@@ -1,20 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
-import { ChartPreview } from '@/components/charts/ChartPreview';
-import { AssetCard } from '@/components/market/AssetCard';
-import { ProfileModal } from '@/components/profile/ProfileModal';
-import { useAssets } from '@/lib/market';
-import { useState } from 'react';
 
 export default function HomeScreen() {
-  const { user } = useAuth();
   const { colors } = useTheme();
-  const { assets, isLoading } = useAssets();
-  const [showProfile, setShowProfile] = useState(false);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -23,104 +14,177 @@ export default function HomeScreen() {
     return 'Boa noite';
   };
 
-  const topAssets = assets?.slice(0, 6) || [];
-  const cryptoAssets = assets?.filter(a => a.type === 'crypto').slice(0, 3) || [];
-  const forexAssets = assets?.filter(a => a.type === 'forex').slice(0, 3) || [];
-  const stockAssets = assets?.filter(a => a.type === 'stock').slice(0, 3) || [];
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
-      <ScrollView className="flex-1">
+      <ScrollView style={styles.container}>
         {/* Header */}
-        <View className="flex-row items-center justify-between p-4">
+        <View style={styles.header}>
           <View>
-            <Text className="text-text-tertiary text-sm">
+            <Text style={[styles.greeting, { color: colors.text.tertiary }]}>
               {greeting()}
             </Text>
-            <Text className="text-text-primary text-xl font-bold">
-              Bem-vindo, {user?.name || 'Trader'}!
+            <Text style={[styles.welcomeText, { color: colors.text.primary }]}>
+              Bem-vindo, Trader!
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => setShowProfile(true)}
-            className="w-10 h-10 bg-surface-secondary rounded-full items-center justify-center"
+            style={[styles.profileButton, { backgroundColor: colors.surface.secondary }]}
           >
             <Ionicons name="person" size={20} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Saldo */}
-        <View className="mx-4 mb-6">
-          <View className="bg-surface-primary p-4 rounded-xl border border-surface-secondary">
-            <Text className="text-text-tertiary text-sm mb-1">Saldo Disponível</Text>
-            <Text className="text-text-primary text-2xl font-bold">
+        <View style={styles.balanceContainer}>
+          <View style={[styles.balanceCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+            <Text style={[styles.balanceLabel, { color: colors.text.tertiary }]}>Saldo Disponível</Text>
+            <Text style={[styles.balanceAmount, { color: colors.text.primary }]}>
               $10,000.00
             </Text>
-            <Text className="text-accent-green text-sm mt-1">
+            <Text style={[styles.bonusText, { color: '#2ed573' }]}>
               +$250.00 bônus diário
             </Text>
           </View>
         </View>
 
         {/* Ativos em Destaque */}
-        <View className="mx-4 mb-6">
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-text-primary text-lg font-semibold">
-              Ativos em Destaque
-            </Text>
-            <TouchableOpacity>
-              <Text className="text-primary-500 text-sm">Ver todos</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Ativos em Destaque
+          </Text>
           
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {topAssets.map((asset) => (
-              <AssetCard key={asset.id} asset={asset} compact />
-            ))}
-          </ScrollView>
+          <View style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
+            <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>BTC</Text>
+            <Text style={[styles.assetName, { color: colors.text.secondary }]}>Bitcoin</Text>
+            <Text style={[styles.assetPrice, { color: colors.text.primary }]}>$45,000.00</Text>
+            <Text style={[styles.assetChange, { color: '#2ed573' }]}>+2.5%</Text>
+          </View>
+
+          <View style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
+            <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>ETH</Text>
+            <Text style={[styles.assetName, { color: colors.text.secondary }]}>Ethereum</Text>
+            <Text style={[styles.assetPrice, { color: colors.text.primary }]}>$3,200.00</Text>
+            <Text style={[styles.assetChange, { color: '#ff4757' }]}>-1.2%</Text>
+          </View>
         </View>
 
-        {/* Criptomoedas */}
-        <View className="mx-4 mb-6">
-          <Text className="text-text-primary text-lg font-semibold mb-3">
-            Criptomoedas
+        {/* Notícias */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Últimas Notícias 📰
           </Text>
-          {cryptoAssets.map((asset) => (
-            <View key={asset.id} className="mb-3">
-              <AssetCard asset={asset} showChart />
-            </View>
-          ))}
-        </View>
-
-        {/* Forex */}
-        <View className="mx-4 mb-6">
-          <Text className="text-text-primary text-lg font-semibold mb-3">
-            Forex
-          </Text>
-          {forexAssets.map((asset) => (
-            <View key={asset.id} className="mb-3">
-              <AssetCard asset={asset} showChart />
-            </View>
-          ))}
-        </View>
-
-        {/* Ações */}
-        <View className="mx-4 mb-6">
-          <Text className="text-text-primary text-lg font-semibold mb-3">
-            Ações
-          </Text>
-          {stockAssets.map((asset) => (
-            <View key={asset.id} className="mb-3">
-              <AssetCard asset={asset} showChart />
-            </View>
-          ))}
+          <View style={[styles.newsCard, { backgroundColor: colors.surface.primary }]}>
+            <Text style={[styles.newsTitle, { color: colors.text.primary }]}>
+              Bitcoin atinge nova máxima histórica
+            </Text>
+            <Text style={[styles.newsSummary, { color: colors.text.secondary }]}>
+              Bitcoin supera a marca de $50.000 pela primeira vez em 2024...
+            </Text>
+          </View>
         </View>
       </ScrollView>
-
-      <ProfileModal 
-        visible={showProfile} 
-        onClose={() => setShowProfile(false)} 
-      />
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  greeting: {
+    fontSize: 14,
+  },
+  welcomeText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  balanceContainer: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  balanceCard: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  balanceLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  balanceAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  bonusText: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  sectionContainer: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  assetCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  assetSymbol: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  assetName: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  assetPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  assetChange: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  newsCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  newsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  newsSummary: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});

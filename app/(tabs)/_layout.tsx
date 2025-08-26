@@ -1,15 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 import { useTheme } from '@/lib/theme';
-import { useAuth } from '@/lib/auth';
 
 export default function TabLayout() {
   const { colors } = useTheme();
-  const { user } = useAuth();
-
-  if (!user) {
-    return null; // Redirecionar para auth se não estiver logado
-  }
 
   return (
     <Tabs
@@ -57,15 +52,27 @@ export default function TabLayout() {
             />
           ),
           tabBarButton: (props) => (
-            <div className="flex-1 items-center justify-center">
-              <div className="w-16 h-16 bg-primary-500 rounded-full items-center justify-center shadow-lg">
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ 
+                width: 64, 
+                height: 64, 
+                backgroundColor: colors.primary[500], 
+                borderRadius: 32, 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5
+              }}>
                 <Ionicons 
                   name="swap-horizontal" 
                   size={28} 
                   color="white" 
                 />
-              </div>
-            </div>
+              </View>
+            </View>
           ),
         }}
       />

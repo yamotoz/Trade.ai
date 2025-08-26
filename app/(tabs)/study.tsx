@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
@@ -83,44 +83,48 @@ export default function StudyScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
       {/* Header */}
-      <View className="p-4">
-        <Text className="text-text-primary text-2xl font-bold mb-4">
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
           Biblioteca de Estudos
         </Text>
         
         {/* Barra de Pesquisa */}
-        <View className="bg-surface-primary rounded-lg flex-row items-center px-3 py-2 mb-4">
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface.primary }]}>
           <Ionicons name="search" size={20} color={colors.text.tertiary} />
           <TextInput
             placeholder="Buscar conteúdos..."
             placeholderTextColor={colors.text.tertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            className="flex-1 ml-2 text-text-primary"
+            style={[styles.searchInput, { color: colors.text.primary }]}
           />
         </View>
 
         {/* Filtros por Nível */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersContainer}>
           {levels.map((level) => (
             <TouchableOpacity
               key={level.id}
               onPress={() => setSelectedLevel(level.id)}
-              className={`mr-3 px-4 py-2 rounded-lg border ${
+              style={[
+                styles.filterButton,
+                { marginRight: 12 },
                 selectedLevel === level.id
-                  ? 'bg-primary-500 border-primary-500'
-                  : 'bg-surface-primary border-surface-secondary'
-              }`}
+                  ? { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
+                  : { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }
+              ]}
             >
-              <View className="flex-row items-center">
+              <View style={styles.filterButtonContent}>
                 <Ionicons 
                   name={level.icon} 
                   size={16} 
                   color={selectedLevel === level.id ? 'white' : colors.text.primary} 
                 />
-                <Text className={`ml-2 font-medium ${
-                  selectedLevel === level.id ? 'text-white' : 'text-text-primary'
-                }`}>
+                <Text style={[
+                  styles.filterButtonText,
+                  { marginLeft: 8 },
+                  selectedLevel === level.id ? { color: 'white' } : { color: colors.text.primary }
+                ]}>
                   {level.label}
                 </Text>
               </View>
@@ -134,21 +138,25 @@ export default function StudyScreen() {
             <TouchableOpacity
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
-              className={`mr-3 px-4 py-2 rounded-lg border ${
+              style={[
+                styles.filterButton,
+                { marginRight: 12 },
                 selectedCategory === category.id
-                  ? 'bg-primary-500 border-primary-500'
-                  : 'bg-surface-primary border-surface-secondary'
-              }`}
+                  ? { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
+                  : { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }
+              ]}
             >
-              <View className="flex-row items-center">
+              <View style={styles.filterButtonContent}>
                 <Ionicons 
                   name={category.icon} 
                   size={16} 
                   color={selectedCategory === category.id ? 'white' : colors.text.primary} 
                 />
-                <Text className={`ml-2 font-medium ${
-                  selectedCategory === category.id ? 'text-white' : 'text-text-primary'
-                }`}>
+                <Text style={[
+                  styles.filterButtonText,
+                  { marginLeft: 8 },
+                  selectedCategory === category.id ? { color: 'white' } : { color: colors.text.primary }
+                ]}>
                   {category.label}
                 </Text>
               </View>
@@ -158,9 +166,9 @@ export default function StudyScreen() {
       </View>
 
       {/* Lista de Estudos */}
-      <ScrollView className="flex-1">
+      <ScrollView style={styles.studiesList}>
         {filteredStudies.length > 0 ? (
-          <View className="px-4">
+          <View style={styles.studiesContainer}>
             {filteredStudies.map((study) => (
               <StudyCard
                 key={study.id}
@@ -173,19 +181,19 @@ export default function StudyScreen() {
             ))}
           </View>
         ) : (
-          <View className="flex-1 items-center justify-center py-16">
+          <View style={styles.emptyState}>
             <Ionicons name="library-outline" size={64} color={colors.text.tertiary} />
-            <Text className="text-text-tertiary text-lg mt-4 text-center">
+            <Text style={[styles.emptyStateTitle, { color: colors.text.tertiary }]}>
               Nenhum conteúdo encontrado
             </Text>
-            <Text className="text-text-muted text-sm mt-2 text-center px-8">
+            <Text style={[styles.emptyStateSubtitle, { color: colors.text.muted }]}>
               Tente ajustar os filtros ou buscar por outro termo
             </Text>
           </View>
         )}
 
         {/* Anúncio Banner */}
-        <View className="mx-4 my-4">
+        <View style={styles.bannerContainer}>
           <BannerAd />
         </View>
       </ScrollView>
@@ -205,3 +213,69 @@ export default function StudyScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  searchContainer: {
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  filtersContainer: {
+    marginBottom: 12,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  filterButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterButtonText: {
+    fontWeight: '500',
+  },
+  studiesList: {
+    flex: 1,
+  },
+  studiesContainer: {
+    paddingHorizontal: 16,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  bannerContainer: {
+    marginHorizontal: 16,
+    marginVertical: 16,
+  },
+});

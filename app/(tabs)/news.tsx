@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
@@ -57,7 +57,7 @@ export default function NewsScreen() {
       // Adicionar anúncio a cada 5 itens
       if ((index + 1) % 5 === 0) {
         items.push(
-          <View key={`ad-${index}`} className="my-4">
+          <View key={`ad-${index}`} style={styles.adContainer}>
             <BannerAd />
           </View>
         );
@@ -70,8 +70,8 @@ export default function NewsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
       {/* Header */}
-      <View className="p-4">
-        <Text className="text-text-primary text-2xl font-bold mb-4">
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
           Notícias
         </Text>
         
@@ -81,21 +81,25 @@ export default function NewsScreen() {
             <TouchableOpacity
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
-              className={`mr-3 px-4 py-2 rounded-lg border ${
+              style={[
+                styles.categoryButton,
+                { marginRight: 12 },
                 selectedCategory === category.id
-                  ? 'bg-primary-500 border-primary-500'
-                  : 'bg-surface-primary border-surface-secondary'
-              }`}
+                  ? { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
+                  : { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }
+              ]}
             >
-              <View className="flex-row items-center">
+              <View style={styles.categoryButtonContent}>
                 <Ionicons 
                   name={category.icon} 
                   size={16} 
                   color={selectedCategory === category.id ? 'white' : colors.text.primary} 
                 />
-                <Text className={`ml-2 font-medium ${
-                  selectedCategory === category.id ? 'text-white' : 'text-text-primary'
-                }`}>
+                <Text style={[
+                  styles.categoryButtonText,
+                  { marginLeft: 8 },
+                  selectedCategory === category.id ? { color: 'white' } : { color: colors.text.primary }
+                ]}>
                   {category.label}
                 </Text>
               </View>
@@ -106,7 +110,7 @@ export default function NewsScreen() {
 
       {/* Lista de Notícias */}
       <ScrollView 
-        className="flex-1"
+        style={styles.newsList}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -126,20 +130,20 @@ export default function NewsScreen() {
         scrollEventThrottle={400}
       >
         {filteredNews.length > 0 ? (
-          <View className="px-4">
+          <View style={styles.newsContainer}>
             {renderNewsWithAds()}
             
             {/* Indicador de Carregamento */}
             {hasNextPage && (
-              <View className="py-4 items-center">
-                <Text className="text-text-tertiary">Carregando mais notícias...</Text>
+              <View style={styles.loadingContainer}>
+                <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>Carregando mais notícias...</Text>
               </View>
             )}
           </View>
         ) : (
-          <View className="flex-1 items-center justify-center py-16">
+          <View style={styles.emptyState}>
             <Ionicons name="newspaper-outline" size={64} color={colors.text.tertiary} />
-            <Text className="text-text-tertiary text-lg mt-4 text-center">
+            <Text style={[styles.emptyStateTitle, { color: colors.text.tertiary }]}>
               {selectedCategory === 'all' 
                 ? 'Nenhuma notícia disponível'
                 : `Nenhuma notícia de ${categories.find(c => c.id === selectedCategory)?.label}`
@@ -147,9 +151,9 @@ export default function NewsScreen() {
             </Text>
             <TouchableOpacity
               onPress={onRefresh}
-              className="mt-4 bg-primary-500 px-6 py-3 rounded-lg"
+              style={[styles.retryButton, { backgroundColor: colors.primary[500] }]}
             >
-              <Text className="text-white font-medium">Tentar Novamente</Text>
+              <Text style={styles.retryButtonText}>Tentar Novamente</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -165,7 +169,68 @@ export default function NewsScreen() {
       )}
 
       {/* Anúncio Intersticial */}
-      <InterstitialAd />
+      <InterstitialAd       />
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    padding: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  categoryButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryButtonText: {
+    fontWeight: '500',
+  },
+  adContainer: {
+    marginVertical: 16,
+  },
+  newsList: {
+    flex: 1,
+  },
+  newsContainer: {
+    paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: '500',
+  },
+});

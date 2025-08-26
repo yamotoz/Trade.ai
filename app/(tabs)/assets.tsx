@@ -1,21 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
-import { AssetCard } from '@/components/market/AssetCard';
-import { AssetDetail } from '@/components/market/AssetDetail';
-import { useAssets } from '@/lib/market';
-import { useFavorites } from '@/lib/favorites';
-import { BannerAd } from '@/components/ads/BannerAd';
 
 export default function AssetsScreen() {
   const { colors } = useTheme();
-  const { assets, isLoading } = useAssets();
-  const { favorites, toggleFavorite } = useFavorites();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
-  const [selectedAsset, setSelectedAsset] = useState(null);
 
   const assetTypes = [
     { id: 'all', label: 'Todos', icon: 'grid' },
@@ -24,45 +16,40 @@ export default function AssetsScreen() {
     { id: 'stock', label: 'Ações', icon: 'business' },
   ];
 
-  const filteredAssets = useMemo(() => {
-    let filtered = assets || [];
-    
-    // Filtro por tipo
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(asset => asset.type === selectedType);
-    }
-    
-    // Filtro por busca
-    if (searchQuery) {
-      filtered = filtered.filter(asset => 
-        asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    return filtered;
-  }, [assets, selectedType, searchQuery]);
+  // Dados mockados para demonstração
+  const mockAssets = [
+    { id: '1', symbol: 'BTC', name: 'Bitcoin', price: 45000, changePercent: 2.5, type: 'crypto' },
+    { id: '2', symbol: 'ETH', name: 'Ethereum', price: 3200, changePercent: -1.2, type: 'crypto' },
+    { id: '3', symbol: 'AAPL', name: 'Apple Inc.', price: 180, changePercent: 0.8, type: 'stock' },
+    { id: '4', symbol: 'EUR/USD', name: 'Euro/Dólar', price: 1.08, changePercent: 0.3, type: 'forex' },
+  ];
 
-  const topGainers = assets?.filter(a => a.changePercent > 0).slice(0, 5) || [];
-  const topLosers = assets?.filter(a => a.changePercent < 0).slice(0, 5) || [];
+  const filteredAssets = mockAssets.filter(asset => {
+    if (selectedType !== 'all' && asset.type !== selectedType) return false;
+    if (searchQuery && !asset.symbol.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  const topGainers = mockAssets.filter(a => a.changePercent > 0).slice(0, 3);
+  const topLosers = mockAssets.filter(a => a.changePercent < 0).slice(0, 3);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
       {/* Header */}
-      <View className="p-4">
-        <Text className="text-text-primary text-2xl font-bold mb-4">
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
           Ativos
         </Text>
         
         {/* Barra de Pesquisa */}
-        <View className="bg-surface-primary rounded-lg flex-row items-center px-3 py-2 mb-4">
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface.primary }]}>
           <Ionicons name="search" size={20} color={colors.text.tertiary} />
           <TextInput
             placeholder="Buscar ativos..."
             placeholderTextColor={colors.text.tertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            className="flex-1 ml-2 text-text-primary"
+            style={[styles.searchInput, { color: colors.text.primary }]}
           />
         </View>
 
@@ -72,21 +59,25 @@ export default function AssetsScreen() {
             <TouchableOpacity
               key={type.id}
               onPress={() => setSelectedType(type.id)}
-              className={`mr-3 px-4 py-2 rounded-lg border ${
+              style={[
+                styles.typeButton,
+                { marginRight: 12 },
                 selectedType === type.id
-                  ? 'bg-primary-500 border-primary-500'
-                  : 'bg-surface-primary border-surface-secondary'
-              }`}
+                  ? { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
+                  : { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }
+              ]}
             >
-              <View className="flex-row items-center">
+              <View style={styles.typeButtonContent}>
                 <Ionicons 
                   name={type.icon} 
                   size={16} 
                   color={selectedType === type.id ? 'white' : colors.text.primary} 
                 />
-                <Text className={`ml-2 font-medium ${
-                  selectedType === type.id ? 'text-white' : 'text-text-primary'
-                }`}>
+                <Text style={[
+                  styles.typeButtonText,
+                  { marginLeft: 8 },
+                  selectedType === type.id ? { color: 'white' } : { color: colors.text.primary }
+                ]}>
                   {type.label}
                 </Text>
               </View>
@@ -95,85 +86,154 @@ export default function AssetsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView className="flex-1">
+      <ScrollView style={styles.assetsList}>
         {/* Top Gainers */}
-        {topGainers.length > 0 && (
-          <View className="mx-4 mb-6">
-            <Text className="text-text-primary text-lg font-semibold mb-3">
-              Top Gainers
-            </Text>
-            {topGainers.map((asset) => (
-              <AssetCard 
-                key={asset.id} 
-                asset={asset} 
-                onPress={() => setSelectedAsset(asset)}
-                showFavorite
-                isFavorite={favorites.includes(asset.id)}
-                onToggleFavorite={() => toggleFavorite(asset.id)}
-              />
-            ))}
-          </View>
-        )}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Top Gainers 📈
+          </Text>
+          {topGainers.map((asset) => (
+            <View key={asset.id} style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
+              <View style={styles.assetHeader}>
+                <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
+                <Text style={[styles.assetChange, { color: '#2ed573' }]}>+{asset.changePercent}%</Text>
+              </View>
+              <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+              <Text style={[styles.assetPrice, { color: colors.text.primary }]}>${asset.price.toLocaleString()}</Text>
+            </View>
+          ))}
+        </View>
 
         {/* Top Losers */}
-        {topLosers.length > 0 && (
-          <View className="mx-4 mb-6">
-            <Text className="text-text-primary text-lg font-semibold mb-3">
-              Top Losers
-            </Text>
-            {topLosers.map((asset) => (
-              <AssetCard 
-                key={asset.id} 
-                asset={asset} 
-                onPress={() => setSelectedAsset(asset)}
-                showFavorite
-                isFavorite={favorites.includes(asset.id)}
-                onToggleFavorite={() => toggleFavorite(asset.id)}
-              />
-            ))}
-          </View>
-        )}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Top Losers 📉
+          </Text>
+          {topLosers.map((asset) => (
+            <View key={asset.id} style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
+              <View style={styles.assetHeader}>
+                <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
+                <Text style={[styles.assetChange, { color: '#ff4757' }]}>{asset.changePercent}%</Text>
+              </View>
+              <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+              <Text style={[styles.assetPrice, { color: colors.text.primary }]}>${asset.price.toLocaleString()}</Text>
+            </View>
+          ))}
+        </View>
 
         {/* Lista de Ativos Filtrados */}
-        <View className="mx-4 mb-6">
-          <Text className="text-text-primary text-lg font-semibold mb-3">
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
             {selectedType === 'all' ? 'Todos os Ativos' : `${assetTypes.find(t => t.id === selectedType)?.label}`}
             {searchQuery && ` - "${searchQuery}"`}
           </Text>
           {filteredAssets.map((asset) => (
-            <AssetCard 
-              key={asset.id} 
-              asset={asset} 
-              onPress={() => setSelectedAsset(asset)}
-              showFavorite
-              isFavorite={favorites.includes(asset.id)}
-              onToggleFavorite={() => toggleFavorite(asset.id)}
-            />
+            <View key={asset.id} style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
+              <View style={styles.assetHeader}>
+                <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
+                <Text style={[styles.assetChange, { color: asset.changePercent >= 0 ? '#2ed573' : '#ff4757' }]}>
+                  {asset.changePercent >= 0 ? '+' : ''}{asset.changePercent}%
+                </Text>
+              </View>
+              <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+              <Text style={[styles.assetPrice, { color: colors.text.primary }]}>${asset.price.toLocaleString()}</Text>
+            </View>
           ))}
           {filteredAssets.length === 0 && (
-            <View className="items-center py-8">
+            <View style={styles.emptyState}>
               <Ionicons name="search" size={48} color={colors.text.tertiary} />
-              <Text className="text-text-tertiary text-lg mt-2">
+              <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>
                 Nenhum ativo encontrado
               </Text>
             </View>
           )}
         </View>
-
-        {/* Anúncio Banner */}
-        <View className="mx-4 mb-4">
-          <BannerAd />
-        </View>
       </ScrollView>
-
-      {/* Modal de Detalhe do Ativo */}
-      {selectedAsset && (
-        <AssetDetail
-          asset={selectedAsset}
-          visible={!!selectedAsset}
-          onClose={() => setSelectedAsset(null)}
-        />
-      )}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    padding: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  searchContainer: {
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  typeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  typeButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typeButtonText: {
+    fontWeight: '500',
+  },
+  assetsList: {
+    flex: 1,
+  },
+  sectionContainer: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    marginTop: 8,
+  },
+  assetCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  assetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  assetSymbol: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  assetName: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  assetPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  assetChange: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

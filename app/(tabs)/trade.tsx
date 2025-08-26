@@ -1,45 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
-import { TradingViewChart } from '@/components/charts/TradingViewChart';
-import { OrderTicket } from '@/components/trading/OrderTicket';
-import { TradeHistory } from '@/components/trading/TradeHistory';
-import { useTrades } from '@/lib/trading';
-import { useAssets } from '@/lib/market';
 
 export default function TradeScreen() {
   const { colors } = useTheme();
-  const { trades, openTrade, closeTrade } = useTrades();
-  const { assets } = useAssets();
-  const [selectedAsset, setSelectedAsset] = useState(null);
-  const [showOrderTicket, setShowOrderTicket] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState('BTC');
 
-  const openTrades = trades?.filter(t => t.status === 'open') || [];
-  const closedTrades = trades?.filter(t => t.status === 'closed') || [];
-
-  const totalPnL = closedTrades.reduce((sum, trade) => sum + trade.pnl, 0);
-  const winRate = closedTrades.length > 0 
-    ? (closedTrades.filter(t => t.pnl > 0).length / closedTrades.length) * 100 
-    : 0;
+  // Dados mockados para demonstração
+  const mockAssets = ['BTC', 'ETH', 'AAPL', 'EUR/USD'];
+  const mockTrades = [
+    { id: '1', symbol: 'BTC', side: 'buy', quantity: 0.1, price: 45000, pnl: 250 },
+    { id: '2', symbol: 'ETH', side: 'sell', quantity: 2, price: 3200, pnl: -80 },
+  ];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between p-4">
-        <Text className="text-text-primary text-xl font-bold">Operação</Text>
-        <View className="flex-row space-x-2">
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Operação</Text>
+        <View style={styles.headerButtons}>
           <TouchableOpacity
-            onPress={() => setShowHistory(true)}
-            className="bg-surface-secondary p-2 rounded-lg"
+            style={[styles.headerButton, { backgroundColor: colors.surface.secondary }]}
           >
             <Ionicons name="time" size={20} color={colors.text.primary} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setShowOrderTicket(true)}
-            className="bg-primary-500 p-2 rounded-lg"
+            style={[styles.headerButton, { backgroundColor: colors.primary[500] }]}
           >
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
@@ -47,49 +35,52 @@ export default function TradeScreen() {
       </View>
 
       {/* Estatísticas Rápidas */}
-      <View className="mx-4 mb-4">
-        <View className="flex-row space-x-3">
-          <View className="flex-1 bg-surface-primary p-3 rounded-lg">
-            <Text className="text-text-tertiary text-xs">P&L Total</Text>
-            <Text className={`text-lg font-bold ${totalPnL >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
-              ${totalPnL.toFixed(2)}
+      <View style={styles.statsContainer}>
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { backgroundColor: colors.surface.primary }]}>
+            <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>P&L Total</Text>
+            <Text style={[styles.statValue, { color: '#2ed573' }]}>
+              $170.00
             </Text>
           </View>
-          <View className="flex-1 bg-surface-primary p-3 rounded-lg">
-            <Text className="text-text-tertiary text-xs">Taxa de Acerto</Text>
-            <Text className="text-text-primary text-lg font-bold">
-              {winRate.toFixed(1)}%
+          <View style={[styles.statCard, { backgroundColor: colors.surface.primary }]}>
+            <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Taxa de Acerto</Text>
+            <Text style={[styles.statValue, { color: colors.text.primary }]}>
+              50.0%
             </Text>
           </View>
-          <View className="flex-1 bg-surface-primary p-3 rounded-lg">
-            <Text className="text-text-tertiary text-xs">Trades Abertos</Text>
-            <Text className="text-text-primary text-lg font-bold">
-              {openTrades.length}
+          <View style={[styles.statCard, { backgroundColor: colors.surface.primary }]}>
+            <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Trades Abertos</Text>
+            <Text style={[styles.statValue, { color: colors.text.primary }]}>
+              2
             </Text>
           </View>
         </View>
       </View>
 
       {/* Seleção de Ativo */}
-      <View className="mx-4 mb-4">
-        <Text className="text-text-primary text-lg font-semibold mb-2">
+      <View style={styles.assetSelectionContainer}>
+        <Text style={[styles.assetSelectionTitle, { color: colors.text.primary }]}>
           Selecionar Ativo
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {assets?.slice(0, 10).map((asset) => (
+          {mockAssets.map((asset) => (
             <TouchableOpacity
-              key={asset.id}
+              key={asset}
               onPress={() => setSelectedAsset(asset)}
-              className={`mr-3 px-4 py-2 rounded-lg border ${
-                selectedAsset?.id === asset.id
-                  ? 'bg-primary-500 border-primary-500'
-                  : 'bg-surface-primary border-surface-secondary'
-              }`}
+              style={[
+                styles.assetButton,
+                { marginRight: 12 },
+                selectedAsset === asset
+                  ? { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
+                  : { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }
+              ]}
             >
-              <Text className={`font-medium ${
-                selectedAsset?.id === asset.id ? 'text-white' : 'text-text-primary'
-              }`}>
-                {asset.symbol}
+              <Text style={[
+                styles.assetButtonText,
+                { color: selectedAsset === asset ? 'white' : colors.text.primary }
+              ]}>
+                {asset}
               </Text>
             </TouchableOpacity>
           ))}
@@ -98,77 +89,168 @@ export default function TradeScreen() {
 
       {/* Gráfico TradingView */}
       {selectedAsset && (
-        <View className="flex-1 mx-4 mb-4">
-          <View className="bg-surface-primary rounded-lg overflow-hidden">
-            <TradingViewChart 
-              symbol={selectedAsset.symbol}
-              interval="1D"
-              height={300}
-            />
+        <View style={styles.chartContainer}>
+          <View style={[styles.chartCard, { backgroundColor: colors.surface.primary }]}>
+            <View style={styles.chartPlaceholder}>
+              <Text style={[styles.chartText, { color: colors.text.primary }]}>📊 {selectedAsset}</Text>
+              <Text style={[styles.chartSubtext, { color: colors.text.secondary }]}>Gráfico em tempo real</Text>
+            </View>
           </View>
         </View>
       )}
 
       {/* Trades Abertos */}
-      {openTrades.length > 0 && (
-        <View className="mx-4 mb-4">
-          <Text className="text-text-primary text-lg font-semibold mb-2">
-            Trades Abertos
-          </Text>
-          {openTrades.map((trade) => (
-            <View key={trade.id} className="bg-surface-primary p-3 rounded-lg mb-2">
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-text-primary font-medium">
-                    {trade.asset.symbol} {trade.side === 'buy' ? 'Compra' : 'Venda'}
-                  </Text>
-                  <Text className="text-text-tertiary text-sm">
-                    Qtd: {trade.quantity} • Preço: ${trade.price}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text className={`font-bold ${
-                    trade.pnl >= 0 ? 'text-accent-green' : 'text-accent-red'
-                  }`}>
-                    ${trade.pnl.toFixed(2)}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => closeTrade(trade.id)}
-                    className="bg-accent-red px-3 py-1 rounded mt-1"
-                  >
-                    <Text className="text-white text-xs">Fechar</Text>
-                  </TouchableOpacity>
-                </View>
+      <View style={styles.tradesContainer}>
+        <Text style={[styles.tradesTitle, { color: colors.text.primary }]}>
+          Trades Abertos
+        </Text>
+        {mockTrades.map((trade) => (
+          <View key={trade.id} style={[styles.tradeCard, { backgroundColor: colors.surface.primary }]}>
+            <View style={styles.tradeContent}>
+              <View>
+                <Text style={[styles.tradeSymbol, { color: colors.text.primary }]}>
+                  {trade.symbol} {trade.side === 'buy' ? 'Compra' : 'Venda'}
+                </Text>
+                <Text style={[styles.tradeDetails, { color: colors.text.tertiary }]}>
+                  Qtd: {trade.quantity} • Preço: ${trade.price}
+                </Text>
+              </View>
+              <View style={styles.tradeActions}>
+                <Text style={[styles.tradePnl, { color: trade.pnl >= 0 ? '#2ed573' : '#ff4757' }]}>
+                  ${trade.pnl.toFixed(2)}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.closeButton, { backgroundColor: '#ff4757' }]}
+                >
+                  <Text style={styles.closeButtonText}>Fechar</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          ))}
-        </View>
-      )}
-
-      {/* Modal do Ticket de Ordem */}
-      <Modal
-        visible={showOrderTicket}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <OrderTicket
-          asset={selectedAsset}
-          onClose={() => setShowOrderTicket(false)}
-          onSubmit={openTrade}
-        />
-      </Modal>
-
-      {/* Modal do Histórico */}
-      <Modal
-        visible={showHistory}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <TradeHistory
-          trades={closedTrades}
-          onClose={() => setShowHistory(false)}
-        />
-      </Modal>
+          </View>
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  statsContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  assetSelectionContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  assetSelectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  assetButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  assetButtonText: {
+    fontWeight: '500',
+  },
+  chartContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  chartCard: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  tradesContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  tradesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  tradeCard: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  tradeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tradeSymbol: {
+    fontWeight: '500',
+  },
+  tradeDetails: {
+    fontSize: 14,
+  },
+  tradeActions: {
+    alignItems: 'flex-end',
+  },
+  tradePnl: {
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 12,
+  },
+  chartPlaceholder: {
+    height: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chartText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  chartSubtext: {
+    fontSize: 16,
+  },
+});
