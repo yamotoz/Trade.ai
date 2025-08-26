@@ -42,7 +42,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-secure-store',
-    'react-native-google-mobile-ads',
   ],
   scheme: 'trade-ai',
   experiments: {
