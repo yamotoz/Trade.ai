@@ -1,228 +1,202 @@
-# Trade.ai
- Criação de um aplicativo voltado ao mercado financeiro
+Objetivo:
+Gerar um app mobile chamado Trade.ai voltado para iniciantes e intermediários (18–30 anos) em trading, com simulação realista, dados de mercado em tempo real, notícias e conteúdos de estudo.
 
+Stack: Desenvolver em Expo (React Native, TypeScript) com Supabase (Auth + Postgres + Storage), AdMob, TradingView (operação e detalhe do ativo) e gráficos estilo Recharts (preview na Home).
 
-/trade-ai
-  /app
-    /login (tela de login inicial)
-    /home (tela inicial com gráficos e ativos principais)
-    /ativos (listagem e detalhes de ativos)
-    /operacao (simulador de trading)
-    /noticias (feed de notícias)
-    /perfil (configurações do usuário)
-  /components (botões, cards, navbar, gráficos)
-  /lib (funções de integração com supabase)
-  /styles (configurações de Tailwind)
+Design: Dark moderno (preto + azul escuro como padrão), UX impecável, animação de splash com a logo.
 
+Instrução ao Cursor:
+Aja como Tech Lead e Principal Engineer. Crie o projeto do zero, configure dependências, pastas, temas, navegação, autenticação, banco, políticas de segurança, componentes UI, gráficos, cache offline, anúncios e um MVP funcional. Escreva de forma production-ready, com tipagem forte, comentários, testes básicos e lint.
 
-📘 PRD – Trade.ai
+1) Stack e padrões obrigatórios
 
-Versão 1.0 – MVP
+Runtime/App: Expo SDK atual, React Native, TypeScript, Expo Router (tabs + stacks)
 
-🎯 Objetivo do App
+UI: NativeWind (Tailwind RN), Safe Area, Gesture Handler, Reanimated
 
-O Trade.ai é um aplicativo educacional e de simulação para iniciantes e intermediários (18–30 anos) no mercado financeiro.
-O app permite simular trades em tempo real com ativos reais (dados de APIs externas), acompanhar notícias do mercado, aprender através da aba Estudos, e acompanhar estatísticas pessoais.
+Ícones: minimalistas (@expo/vector-icons)
 
-🖼️ UX/UI & Design
+Estado & Dados: Zustand (local) + TanStack React Query (remoto + persistência offline com AsyncStorage)
 
-Estilo: Minimalista, moderno, profissional.
+Auth & DB: Supabase
 
-Cores: Preto como base, Azul Escuro padrão.
+Gráficos:
 
-Configuração de temas opcionais → Rosa, Verde, Branco (detalhes apenas, fundo sempre preto).
+Na Home: ChartPreview (Recharts na Web, Victory Native no mobile)
 
-Ícones: Minimalistas e elegantes.
+Operação/Detalhe do ativo: TradingView via WebView (com indicadores técnicos)
 
-Animação de abertura: Logo do Trade.ai com efeito animado (movimento elegante).
+Indicadores técnicos: RSI, MACD, Bollinger, SMA/EMA
 
-Navbar inferior (5 abas):
+APIs de Mercado:
+
+Cripto: Binance (WebSocket + REST)
+
+Forex: Alpha Vantage ou Twelve Data
+
+Ações: Yahoo Finance ou Polygon.io
+
+Implementar camada de adapters unificados para getQuote, getOHLCV, streamPrices
+
+Ads: Apenas em Ativos, Notícias e Estudos (via AdMob)
+
+Cache Offline: React Query com persistência
+
+Formulários: react-hook-form + zod
+
+Toasts/Alerts: minimalistas (estilo sonner)
+
+Env: variáveis seguras via Expo Constants/@env
+
+Qualidade: ESLint, Prettier, Husky, Jest/RTL para testes básicos
+
+2) Estrutura de pastas (conceito)
+
+app/ → telas (auth, tabs, onboarding, modals)
+
+components/ → UI, gráficos, mercado, ads
+
+lib/ → Supabase, tema, storage, adapters de mercado, auth hooks, query client
+
+state/ → Zustand stores (settings, simulação)
+
+db/ → schema, policies e funções Supabase
+
+assets/ → ícones, animações
+
+3) Design System & Tema
+
+Fundo preto sempre
+
+Cor primária padrão: azul escuro
+
+Acentos opcionais: rosa, verde, branco (apenas detalhes, configurável)
+
+Tipografia: moderna e legível (Inter/Poppins)
+
+Componentes: botões arredondados, inputs elegantes, cards com sombras suaves
+
+Acessibilidade AA, tamanhos de toque ≥ 44px
+
+Animação inicial: splash com logo (Lottie), transição suave
+
+4) Navegação
+
+Bottom Tabs (ordem e ícones):
 
 Home
 
 Ativos
 
-Operação (principal, central, em destaque)
+Operação (botão central destacado)
 
 Notícias
 
 Estudos
 
-🔑 Autenticação e Contas
+Perfil: modal acessado a partir da Home (ícone no canto)
 
-Cadastro: Nome, Email, Senha.
+Operação (tab central): botão maior, com glow sutil
 
-Login: Email + Senha.
+5) Requisitos funcionais por tela
+5.1 Autenticação
 
-Login social: Google.
+Cadastro com: nome, email, senha, checkbox obrigatório “Sou maior de 18 anos”
 
-Confirmação de idade: checkbox obrigatório (+18).
+Login: email + senha ou Google
 
-Recuperação de conta: via Email.
+Recuperação via email
 
-📲 Funcionalidades por Aba
-1. Home
+Pós-login: aplicar bônus diário de +250$ e redirecionar para Home
 
-“Bem-vindo, [Nome do Usuário]”.
+5.2 Home
 
-Preview enfileirado de ativos (simples).
+Saudação: “Bem-vindo, {Nome}”
 
-Abaixo: gráficos categorizados (Ações, Criptos, Forex).
+Preview enfileirado de ativos com mini-gráficos
 
-Configuração: preview simples ou gráfico expandido.
+Seções por categoria (Ações, Criptos, Forex)
 
-Aba Perfil acessível dentro da Home:
+Preferência do usuário: preview (feixes) ou gráfico completo
 
-Estatísticas → taxa de acerto, total ganho/perdido.
+5.3 Ativos
 
-Configuração de tema (azul padrão, opções de rosa/verde/branco).
+Lista pesquisável/filtrável por tipo, exchange, favoritos
 
-Mudança de plano de perfil (free/premium futuro).
+Item: símbolo, preço, variação, mini-gráfico
 
-2. Ativos
+Detalhe do ativo: gráfico TradingView em tela cheia, botão “Operar”
 
-Listagem de ativos em tempo real.
+Ads em banner inferior (não invasivo)
 
-Foco em Cripto, Forex e Ações.
+5.4 Operação (Simulador)
 
-Ao clicar em um ativo → tela com:
+Saldo inicial de 10.000$
 
-Gráfico interativo TradingView.
+Bônus diário de +250$ ao logar
 
-Dados do ativo em tempo real.
+Gráfico em tela cheia (TradingView) com indicadores ativáveis (SMA, EMA, RSI, MACD, Bollinger)
 
-Opção de adicionar aos favoritos.
+Ticket de ordem: escolha de ativo, quantidade, Compra/Venda, Stop Loss e Take Profit
 
-Exibição de anúncios (AdMob).
+Histórico de operações: abertas e fechadas, com P&L calculado em tempo real
 
-3. Operação (Simulador – Aba Central)
+Estrutura já preparada para IA futura (botão oculto/feature flag)
 
-Saldo inicial: $10.000 fixo.
+5.5 Notícias
 
-Bônus diário: +250$ ao logar.
+Feed paginado por categoria (Cripto, Forex, Ações)
 
-Gráfico em tela cheia (TradingView).
+Cada notícia: título, fonte, horário, resumo, “Ler mais”
 
-Funções:
+Fontes externas integradas (Yahoo Finance, CoinDesk, etc.)
 
-Comprar/Vender ativo.
+Ads a cada 5 itens no feed
 
-Histórico de operações.
+5.6 Estudos
 
-Indicadores técnicos:
+Biblioteca de conteúdos (artigos, vídeos, markdown)
 
-Média móvel
+Filtros: Básico / Intermediário / Avançado + tags
 
-RSI
+Tela de leitura com progresso salvo
 
-MACD
+Ads discretos (banner)
 
-Bandas de Bollinger
+5.7 Perfil (Modal)
 
-Configuração de Stop Loss e Take Profit.
+Estatísticas: taxa de acerto, média de P&L, melhor/pior trade
 
-Estrutura já preparada para IA futura:
+Configurações: mudar tema (acento), visualizar plano (Free), logout
 
-Ícone/botão “IA” (não visível no MVP).
+6) Banco de Dados (Supabase)
 
-Backend preparado para prever direção (compra/venda).
+Perfis: dados básicos do usuário
 
-4. Notícias
+Configurações: tema, preferências de exibição
 
-Feed de notícias do mercado.
+Saldos: saldo atual, último bônus
 
-Categorias: Cripto, Forex, Ações.
+Bônus diário: registro idempotente
 
-Fonte: APIs externas (Yahoo Finance, CoinDesk etc.).
+Trades: ordens do simulador (abertas/fechadas)
 
-Exibição de anúncios (AdMob).
+Favoritos: lista de ativos salvos
 
-5. Estudos
+Ativos: catálogo inicial (cripto, forex, ações, etc.)
 
-Conteúdo educacional adicionado gradualmente (textos, artigos, vídeos).
+Notícias: cache local (opcional)
 
-Organização por tópicos → “Básico”, “Intermediário”, “Avançado”.
+Estudos: conteúdos criados pelo admin
 
-Exibição de anúncios (AdMob).
+Regras de segurança (RLS):
 
-⚙️ Funcionalidades Técnicas
+Usuário só acessa seus próprios dados (perfil, saldo, trades, favoritos, etc.)
 
-Gráficos:
+Ativos e notícias são públicos para leitura
 
-Home → Recharts (preview).
+Funções RPC:
 
-Ativos/Operação → TradingView widget.
+claim_daily_bonus: aplicar bônus diário uma vez por dia por usuário
 
-APIs de Dados:
-
-Yahoo Finance, Alpha Vantage, Binance (tempo real).
-
-Offline:
-
-App funciona exibindo últimos dados cacheados.
-
-Segurança:
-
-Login seguro via Supabase Auth.
-
-Recuperação de senha por email.
-
-Monetização:
-
-MVP → Google AdMob (em Ativos, Notícias e Estudos).
-
-Futuro → Plano Premium (estatísticas avançadas, IA, alertas de preço).
-
-🛠️ Stack de Desenvolvimento
-
-Framework: Expo (React Native + Next.js compatível)
-
-Banco/Auth: Supabase (Postgres + Auth + Storage)
-
-UI: Tailwind (via NativeWind no Expo)
-
-Gráficos: Recharts (Home) + TradingView widget (Ativos/Operação)
-
-Deploy: Play Store (Android primeiro)
-
-Ads: Google AdMob
-
-📅 Roadmap
-
-Fase 1 – MVP (3 meses)
-
-Login/Auth
-
-Home (preview + gráficos)
-
-Ativos com TradingView
-
-Operação (saldo fixo + bônus diário, indicadores básicos, histórico)
-
-Notícias com API
-
-Estudos (conteúdo inicial)
-
-Ads integrados
-
-Fase 2 – Personalização (3–4 meses)
-
-Favoritos
-
-Estatísticas detalhadas
-
-Modo Offline refinado
-
-Mais temas de interface
-
-Fase 3 – Monetização Premium (6 meses)
-
-Alertas de preço
-
-Estatísticas avançadas
-
-Remoção de anúncios
-
-Fase 4 – IA (12 meses)
-
-IA de sugestão de compra/venda (sinais em tempo real).
+user_stats: retornar taxa de acerto, vitórias, trades fechados
