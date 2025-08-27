@@ -1,0 +1,202 @@
+Objetivo:
+Gerar um app mobile chamado Trade.ai voltado para iniciantes e intermediários (18–30 anos) em trading, com simulação realista, dados de mercado em tempo real, notícias e conteúdos de estudo.
+
+Stack: Desenvolver em Expo (React Native, TypeScript) com Supabase (Auth + Postgres + Storage), AdMob, TradingView (operação e detalhe do ativo) e gráficos estilo Recharts (preview na Home).
+
+Design: Dark moderno (preto + azul escuro como padrão), UX impecável, animação de splash com a logo.
+
+Instrução ao Cursor:
+Aja como Tech Lead e Principal Engineer. Crie o projeto do zero, configure dependências, pastas, temas, navegação, autenticação, banco, políticas de segurança, componentes UI, gráficos, cache offline, anúncios e um MVP funcional. Escreva de forma production-ready, com tipagem forte, comentários, testes básicos e lint.
+
+1) Stack e padrões obrigatórios
+
+Runtime/App: Expo SDK atual, React Native, TypeScript, Expo Router (tabs + stacks)
+
+UI: NativeWind (Tailwind RN), Safe Area, Gesture Handler, Reanimated
+
+Ícones: minimalistas (@expo/vector-icons)
+
+Estado & Dados: Zustand (local) + TanStack React Query (remoto + persistência offline com AsyncStorage)
+
+Auth & DB: Supabase
+
+Gráficos:
+
+Na Home: ChartPreview (Recharts na Web, Victory Native no mobile)
+
+Operação/Detalhe do ativo: TradingView via WebView (com indicadores técnicos)
+
+Indicadores técnicos: RSI, MACD, Bollinger, SMA/EMA
+
+APIs de Mercado:
+
+Cripto: Binance (WebSocket + REST)
+
+Forex: Alpha Vantage ou Twelve Data
+
+Ações: Yahoo Finance ou Polygon.io
+
+Implementar camada de adapters unificados para getQuote, getOHLCV, streamPrices
+
+Ads: Apenas em Ativos, Notícias e Estudos (via AdMob)
+
+Cache Offline: React Query com persistência
+
+Formulários: react-hook-form + zod
+
+Toasts/Alerts: minimalistas (estilo sonner)
+
+Env: variáveis seguras via Expo Constants/@env
+
+Qualidade: ESLint, Prettier, Husky, Jest/RTL para testes básicos
+
+2) Estrutura de pastas (conceito)
+
+app/ → telas (auth, tabs, onboarding, modals)
+
+components/ → UI, gráficos, mercado, ads
+
+lib/ → Supabase, tema, storage, adapters de mercado, auth hooks, query client
+
+state/ → Zustand stores (settings, simulação)
+
+db/ → schema, policies e funções Supabase
+
+assets/ → ícones, animações
+
+3) Design System & Tema
+
+Fundo preto sempre
+
+Cor primária padrão: azul escuro
+
+Acentos opcionais: rosa, verde, branco (apenas detalhes, configurável)
+
+Tipografia: moderna e legível (Inter/Poppins)
+
+Componentes: botões arredondados, inputs elegantes, cards com sombras suaves
+
+Acessibilidade AA, tamanhos de toque ≥ 44px
+
+Animação inicial: splash com logo (Lottie), transição suave
+
+4) Navegação
+
+Bottom Tabs (ordem e ícones):
+
+Home
+
+Ativos
+
+Operação (botão central destacado)
+
+Notícias
+
+Estudos
+
+Perfil: modal acessado a partir da Home (ícone no canto)
+
+Operação (tab central): botão maior, com glow sutil
+
+5) Requisitos funcionais por tela
+5.1 Autenticação
+
+Cadastro com: nome, email, senha, checkbox obrigatório “Sou maior de 18 anos”
+
+Login: email + senha ou Google
+
+Recuperação via email
+
+Pós-login: aplicar bônus diário de +250$ e redirecionar para Home
+
+5.2 Home
+
+Saudação: “Bem-vindo, {Nome}”
+
+Preview enfileirado de ativos com mini-gráficos
+
+Seções por categoria (Ações, Criptos, Forex)
+
+Preferência do usuário: preview (feixes) ou gráfico completo
+
+5.3 Ativos
+
+Lista pesquisável/filtrável por tipo, exchange, favoritos
+
+Item: símbolo, preço, variação, mini-gráfico
+
+Detalhe do ativo: gráfico TradingView em tela cheia, botão “Operar”
+
+Ads em banner inferior (não invasivo)
+
+5.4 Operação (Simulador)
+
+Saldo inicial de 10.000$
+
+Bônus diário de +250$ ao logar
+
+Gráfico em tela cheia (TradingView) com indicadores ativáveis (SMA, EMA, RSI, MACD, Bollinger)
+
+Ticket de ordem: escolha de ativo, quantidade, Compra/Venda, Stop Loss e Take Profit
+
+Histórico de operações: abertas e fechadas, com P&L calculado em tempo real
+
+Estrutura já preparada para IA futura (botão oculto/feature flag)
+
+5.5 Notícias
+
+Feed paginado por categoria (Cripto, Forex, Ações)
+
+Cada notícia: título, fonte, horário, resumo, “Ler mais”
+
+Fontes externas integradas (Yahoo Finance, CoinDesk, etc.)
+
+Ads a cada 5 itens no feed
+
+5.6 Estudos
+
+Biblioteca de conteúdos (artigos, vídeos, markdown)
+
+Filtros: Básico / Intermediário / Avançado + tags
+
+Tela de leitura com progresso salvo
+
+Ads discretos (banner)
+
+5.7 Perfil (Modal)
+
+Estatísticas: taxa de acerto, média de P&L, melhor/pior trade
+
+Configurações: mudar tema (acento), visualizar plano (Free), logout
+
+6) Banco de Dados (Supabase)
+
+Perfis: dados básicos do usuário
+
+Configurações: tema, preferências de exibição
+
+Saldos: saldo atual, último bônus
+
+Bônus diário: registro idempotente
+
+Trades: ordens do simulador (abertas/fechadas)
+
+Favoritos: lista de ativos salvos
+
+Ativos: catálogo inicial (cripto, forex, ações, etc.)
+
+Notícias: cache local (opcional)
+
+Estudos: conteúdos criados pelo admin
+
+Regras de segurança (RLS):
+
+Usuário só acessa seus próprios dados (perfil, saldo, trades, favoritos, etc.)
+
+Ativos e notícias são públicos para leitura
+
+Funções RPC:
+
+claim_daily_bonus: aplicar bônus diário uma vez por dia por usuário
+
+user_stats: retornar taxa de acerto, vitórias, trades fechados
