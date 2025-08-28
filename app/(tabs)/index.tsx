@@ -348,67 +348,67 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Lista de Ativos - Estilo Faixa */}
+        {/* Lista de Ativos - Novo Design */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
             Meus Ativos
           </Text>
           
           {assets.map((asset) => (
-            <View key={asset.id} style={[styles.assetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-              <View style={styles.assetStripInfo}>
-                <View style={styles.assetStripHeader}>
-                  <View style={styles.assetIconContainer}>
-                    <Ionicons 
-                      name={asset.symbol === 'BTC' ? 'logo-bitcoin' : 'trending-up'} 
-                      size={20} 
-                      color={colors.primary[500]} 
-                    />
-                  </View>
-                  <View style={styles.assetStripTextInfo}>
-                    <Text style={[styles.assetStripSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
-                    <Text style={[styles.assetStripName, { color: colors.text.secondary }]}>{asset.name}</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.assetStripRight}>
-                <View style={styles.assetPriceInfo}>
-                  <Text style={[styles.assetPriceResumido, { color: colors.text.primary }]}>
-                    {asset.price.toFixed(2).replace('.', ',')}
-                  </Text>
-                  <View style={styles.assetTrendInfo}>
-                    <Ionicons 
-                      name={Math.random() > 0.5 ? 'trending-up' : 'trending-down'} 
-                      size={14} 
-                      color={Math.random() > 0.5 ? '#2ed573' : '#ff4757'} 
-                    />
-                    <Text style={[
-                      styles.assetTrendValue, 
-                      { color: Math.random() > 0.5 ? '#2ed573' : '#ff4757' }
-                    ]}>
-                      {Math.random() > 0.5 ? '+' : ''}{(Math.random() * 5).toFixed(2).replace('.', ',')}%
-                    </Text>
+            <View key={asset.id} style={[styles.newAssetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+              {/* Lado Esquerdo - Logo e Informações */}
+              <View style={styles.assetLeftSection}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.redMarker} />
+                  <View style={styles.circularLogo}>
+                    <View style={styles.logoTopHalf} />
+                    <View style={styles.logoBottomHalf}>
+                      <Text style={styles.logoText}>BR</Text>
+                    </View>
                   </View>
                 </View>
                 
-                <View style={styles.assetStripActions}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => {
-                      setSelectedAssetForNews(asset);
-                      setShowNewsModal(true);
-                    }}
-                  >
-                    <Ionicons name="newspaper" size={20} color={colors.text.tertiary} />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteAsset(asset.id)}
-                  >
-                    <Ionicons name="trash" size={16} color="#ff4757" />
-                  </TouchableOpacity>
+                                 <View style={styles.newAssetInfo}>
+                   <View style={styles.newAssetHeader}>
+                     <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
+                     <View style={styles.newAssetActions}>
+                       <TouchableOpacity
+                         style={styles.actionIconButton}
+                         onPress={() => {
+                           setSelectedAssetForNews(asset);
+                           setShowNewsModal(true);
+                         }}
+                       >
+                         <Ionicons name="newspaper" size={16} color="#ffa500" />
+                       </TouchableOpacity>
+                       
+                       <TouchableOpacity
+                         style={styles.actionIconButton}
+                         onPress={() => {
+                           setSelectedAssetForAlert(asset);
+                           setShowAlertModal(true);
+                         }}
+                       >
+                         <Ionicons name="notifications" size={16} color="#ffa500" />
+                       </TouchableOpacity>
+                     </View>
+                   </View>
+                   <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+                 </View>
+              </View>
+              
+              {/* Lado Direito - Preço e Variação */}
+              <View style={styles.assetRightSection}>
+                <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                  {asset.price.toFixed(2).replace('.', ',')}
+                </Text>
+                <View style={styles.priceChange}>
+                  <Text style={[styles.changeAmount, { color: '#2ed573' }]}>
+                    +{(asset.price * 0.01).toFixed(2).replace('.', ',')}
+                  </Text>
+                  <Text style={[styles.changePercentage, { color: '#2ed573' }]}>
+                    +1,44%
+                  </Text>
                 </View>
               </View>
             </View>
@@ -1251,39 +1251,102 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 8,
   },
-  // Estilos para o novo layout de faixas
-  assetIconContainer: {
+  // Estilos para o novo design de faixa
+  newAssetStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  assetLeftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  logoContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  redMarker: {
+    position: 'absolute',
+    left: -4,
+    top: 8,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 0,
+    borderBottomWidth: 8,
+    borderTopWidth: 8,
+    borderLeftColor: '#ff4757',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent',
+    zIndex: 1,
+  },
+  circularLogo: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(46, 213, 115, 0.1)',
+    overflow: 'hidden',
+  },
+  logoTopHalf: {
+    width: '100%',
+    height: '50%',
+    backgroundColor: '#ffd700',
+  },
+  logoBottomHalf: {
+    width: '100%',
+    height: '50%',
+    backgroundColor: '#006400',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  assetStripTextInfo: {
+  logoText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  newAssetInfo: {
     flex: 1,
   },
-  assetStripRight: {
+  newAssetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
-  assetPriceInfo: {
+  newAssetActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionIconButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assetRightSection: {
     alignItems: 'flex-end',
   },
-  assetPriceResumido: {
+  currentPrice: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  assetTrendInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  priceChange: {
+    alignItems: 'flex-end',
   },
-  assetTrendValue: {
+  changeAmount: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  changePercentage: {
     fontSize: 12,
     fontWeight: '600',
   },
 });
+
