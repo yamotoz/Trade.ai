@@ -40,7 +40,18 @@ export default function HomeScreen() {
   const [showNewsModal, setShowNewsModal] = useState(false);
   const [selectedAssetForAlert, setSelectedAssetForAlert] = useState<Asset | null>(null);
   const [selectedAssetForNews, setSelectedAssetForNews] = useState<Asset | null>(null);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([
+    // Bitcoin como ativo padrão de início
+    {
+      id: 'btc-default',
+      symbol: 'BTC',
+      name: 'Bitcoin',
+      quantity: 0.001,
+      price: 250000,
+      date: new Date().toISOString(),
+      totalValue: 250,
+    }
+  ]);
   const [selectedAsset, setSelectedAsset] = useState('');
   const [quantity, setQuantity] = useState('');
   const [date, setDate] = useState('');
@@ -160,6 +171,26 @@ export default function HomeScreen() {
     Alert.alert(
       'Alerta Configurado!',
       `Você será notificado quando ${selectedAssetForAlert.symbol} atingir R$ ${alertPrice}`
+    );
+  };
+
+  const handleDeleteAsset = (assetId: string) => {
+    Alert.alert(
+      'Remover Ativo',
+      'Tem certeza que deseja remover este ativo da sua carteira?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => {
+            setAssets(assets.filter(asset => asset.id !== assetId));
+          },
+        },
+      ]
     );
   };
 
@@ -317,75 +348,46 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Lista de Ativos - Horizontal */}
+        {/* Lista de Ativos - Estilo Faixa */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
             Meus Ativos
           </Text>
           
-          {assets.length === 0 ? (
-            <View style={[styles.emptyState, { backgroundColor: colors.surface.secondary }]}>
-              <Ionicons name="trending-up" size={48} color={colors.text.tertiary} />
-              <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>
-                Nenhum ativo adicionado ainda
-              </Text>
-              <Text style={[styles.emptyStateSubtext, { color: colors.text.tertiary }]}>
-                Adicione seus primeiros ativos para começar a acompanhar
-              </Text>
-            </View>
-          ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.assetsHorizontalContainer}
-            >
-              {assets.map((asset) => (
-                <View key={asset.id} style={[styles.assetCardHorizontal, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-                  <View style={styles.assetHeaderHorizontal}>
-                    <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
-                    <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+          {assets.map((asset) => (
+            <View key={asset.id} style={[styles.assetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+              <View style={styles.assetStripInfo}>
+                <View style={styles.assetStripHeader}>
+                  <View style={styles.assetIconContainer}>
+                    <Ionicons 
+                      name={asset.symbol === 'BTC' ? 'logo-bitcoin' : 'trending-up'} 
+                      size={20} 
+                      color={colors.primary[500]} 
+                    />
                   </View>
-                  
-                  <View style={styles.assetDetailsHorizontal}>
-                    <Text style={[styles.assetPrice, { color: colors.text.primary }]}>
-                      {formatCurrency(asset.price)}
-                    </Text>
-                    <Text style={[styles.assetQuantity, { color: colors.text.secondary }]}>
-                      {asset.quantity} un.
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.assetFooterHorizontal}>
-                    <Text style={[styles.assetTotal, { color: colors.text.primary }]}>
-                      {formatCurrency(asset.totalValue)}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Faixas de Ativos com Ícones */}
-        {assets.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-              Acompanhamento dos Ativos
-            </Text>
-            
-            {assets.map((asset) => (
-              <View key={asset.id} style={[styles.assetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-                <View style={styles.assetStripInfo}>
-                  <View style={styles.assetStripHeader}>
+                  <View style={styles.assetStripTextInfo}>
                     <Text style={[styles.assetStripSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
                     <Text style={[styles.assetStripName, { color: colors.text.secondary }]}>{asset.name}</Text>
                   </View>
-                  <View style={styles.assetStripDetails}>
-                    <Text style={[styles.assetStripPrice, { color: colors.text.primary }]}>
-                      {formatCurrency(asset.price)}
-                    </Text>
-                    <Text style={[styles.assetStripQuantity, { color: colors.text.secondary }]}>
-                      {asset.quantity} un. • {formatCurrency(asset.totalValue)}
+                </View>
+              </View>
+              
+              <View style={styles.assetStripRight}>
+                <View style={styles.assetPriceInfo}>
+                  <Text style={[styles.assetPriceResumido, { color: colors.text.primary }]}>
+                    {asset.price.toFixed(2).replace('.', ',')}
+                  </Text>
+                  <View style={styles.assetTrendInfo}>
+                    <Ionicons 
+                      name={Math.random() > 0.5 ? 'trending-up' : 'trending-down'} 
+                      size={14} 
+                      color={Math.random() > 0.5 ? '#2ed573' : '#ff4757'} 
+                    />
+                    <Text style={[
+                      styles.assetTrendValue, 
+                      { color: Math.random() > 0.5 ? '#2ed573' : '#ff4757' }
+                    ]}>
+                      {Math.random() > 0.5 ? '+' : ''}{(Math.random() * 5).toFixed(2).replace('.', ',')}%
                     </Text>
                   </View>
                 </View>
@@ -402,19 +404,29 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => {
-                      setSelectedAssetForAlert(asset);
-                      setShowAlertModal(true);
-                    }}
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteAsset(asset.id)}
                   >
-                    <Ionicons name="notifications" size={20} color={colors.text.tertiary} />
+                    <Ionicons name="trash" size={16} color="#ff4757" />
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
-          </View>
-        )}
+            </View>
+          ))}
+          
+          {/* Botão Transparente para Adicionar Ativos */}
+          <TouchableOpacity
+            style={[styles.addAssetButton, { borderColor: colors.surface.secondary }]}
+            onPress={() => setShowAddModal(true)}
+          >
+            <Ionicons name="add-circle-outline" size={24} color={colors.text.tertiary} />
+            <Text style={[styles.addAssetButtonText, { color: colors.text.tertiary }]}>
+              Adicionar Ativo
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+
 
         {/* Seção de Notícias */}
         <View style={styles.sectionContainer}>
@@ -1207,6 +1219,70 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   indicatorValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Estilos para os novos elementos
+  assetHeaderLeft: {
+    flex: 1,
+  },
+  deleteButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 71, 87, 0.1)',
+    borderRadius: 12,
+  },
+  addAssetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 16,
+    backgroundColor: 'transparent',
+  },
+  addAssetButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  // Estilos para o novo layout de faixas
+  assetIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(46, 213, 115, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  assetStripTextInfo: {
+    flex: 1,
+  },
+  assetStripRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  assetPriceInfo: {
+    alignItems: 'flex-end',
+  },
+  assetPriceResumido: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  assetTrendInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  assetTrendValue: {
     fontSize: 12,
     fontWeight: '600',
   },
