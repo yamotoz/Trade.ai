@@ -5,13 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
 import { StudyCard } from '@/components/study/StudyCard';
 import { StudyReader } from '@/components/study/StudyReader';
-import { useStudies } from '@/lib/study';
+import { useStudy } from '@/lib/study';
 import { useStudyProgress } from '@/lib/study-progress';
 import { BannerAd } from '@/components/ads/BannerAd';
 
 export default function StudyScreen() {
   const { colors } = useTheme();
-  const { studies, isLoading } = useStudies();
+  const { studies, isLoading } = useStudy();
   const { progress, updateProgress } = useStudyProgress();
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');

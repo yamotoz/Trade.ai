@@ -15,8 +15,8 @@ const mockStudies = [
     id: '2',
     title: 'Análise Técnica Avançada',
     description: 'Técnicas avançadas de análise de gráficos e indicadores',
-    category: 'avançado',
-    level: 'Intermediário',
+    category: 'intermediário',
+    level: 'intermediário',
     duration: '30 min',
     content: 'Conteúdo completo do estudo aqui...'
   },
@@ -24,8 +24,8 @@ const mockStudies = [
     id: '3',
     title: 'Gestão de Risco',
     description: 'Como gerenciar riscos e proteger seu capital',
-    category: 'intermediário',
-    level: 'Intermediário',
+    category: 'avançado',
+    level: 'avançado',
     duration: '20 min',
     content: 'Conteúdo completo do estudo aqui...'
   }

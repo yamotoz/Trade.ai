@@ -80,7 +80,7 @@ export default function HomeScreen() {
             <Text style={[styles.newsSummary, { color: colors.text.secondary }]}>
               Bitcoin supera a marca de $50.000 pela primeira vez em 2024...
             </Text>
-          </View>
+          </View> 
         </View>
       </ScrollView>
     </SafeAreaView>
