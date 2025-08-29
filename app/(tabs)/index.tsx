@@ -38,8 +38,10 @@ export default function HomeScreen() {
   const [showAssetPicker, setShowAssetPicker] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showNewsModal, setShowNewsModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedAssetForAlert, setSelectedAssetForAlert] = useState<Asset | null>(null);
   const [selectedAssetForNews, setSelectedAssetForNews] = useState<Asset | null>(null);
+  const [isDollarMode, setIsDollarMode] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([
     // Bitcoin como ativo padrão de início
     {
@@ -195,7 +197,11 @@ export default function HomeScreen() {
   };
 
   const formatCurrency = (value: number) => {
-    return `R$ ${value.toFixed(2).replace('.', ',')}`;
+    if (isDollarMode) {
+      const dollarValue = value / 5.67;
+      return `${dollarValue.toFixed(2).replace('.', ',')}`;
+    }
+    return `${value.toFixed(2).replace('.', ',')}`;
   };
 
   const formatDate = (dateStr: string) => {
@@ -205,6 +211,10 @@ export default function HomeScreen() {
 
   const getAssetNews = (assetSymbol: string) => {
     return generateNewsForAsset(assetSymbol);
+  };
+
+  const toggleCurrencyMode = () => {
+    setIsDollarMode(!isDollarMode);
   };
 
   return (
@@ -231,9 +241,19 @@ export default function HomeScreen() {
                   <Ionicons name="wallet" size={24} color={colors.text.primary} />
                 </View>
                 <View>
-                  <Text style={[styles.portfolioLabel, { color: colors.text.tertiary }]}>
-                    Carteira
-                  </Text>
+                  <View style={styles.portfolioHeader}>
+                    <Text style={[styles.portfolioLabel, { color: colors.text.tertiary }]}>
+                      Carteira
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.currencyToggle}
+                      onPress={toggleCurrencyMode}
+                    >
+                      <Text style={[styles.currencyToggleText, { color: colors.primary[500] }]}>
+                        {isDollarMode ? 'R$' : '$'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                   <Text style={[styles.portfolioAmount, { color: colors.text.primary }]}>
                     {formatCurrency(calculateTotalPortfolio())}
                   </Text>
@@ -328,7 +348,7 @@ export default function HomeScreen() {
               <View style={styles.chartIndicators}>
                 <View style={styles.indicator}>
                   <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
-                  <View style={styles.trendIndicator}>
+                  <View style={styles.trendIndicatorContainer}>
                     <Ionicons name="trending-up" size={14} color="#2ed573" />
                     <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
                   </View>
@@ -355,53 +375,54 @@ export default function HomeScreen() {
           </Text>
           
           {assets.map((asset) => (
-            <View key={asset.id} style={[styles.newAssetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+            <TouchableOpacity
+              key={asset.id}
+              style={[styles.newAssetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}
+              onLongPress={() => handleDeleteAsset(asset.id)}
+              activeOpacity={0.7}
+            >
               {/* Lado Esquerdo - Logo e Informações */}
               <View style={styles.assetLeftSection}>
                 <View style={styles.logoContainer}>
-                  <View style={styles.redMarker} />
-                  <View style={styles.circularLogo}>
-                    <View style={styles.logoTopHalf} />
-                    <View style={styles.logoBottomHalf}>
-                      <Text style={styles.logoText}>BR</Text>
-                    </View>
+                  <View style={styles.bitcoinIcon}>
+                    <Text style={styles.bitcoinSymbol}>₿</Text>
                   </View>
                 </View>
                 
-                                 <View style={styles.newAssetInfo}>
-                   <View style={styles.newAssetHeader}>
-                     <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
-                     <View style={styles.newAssetActions}>
-                       <TouchableOpacity
-                         style={styles.actionIconButton}
-                         onPress={() => {
-                           setSelectedAssetForNews(asset);
-                           setShowNewsModal(true);
-                         }}
-                       >
-                         <Ionicons name="newspaper" size={16} color="#ffa500" />
-                       </TouchableOpacity>
-                       
-                       <TouchableOpacity
-                         style={styles.actionIconButton}
-                         onPress={() => {
-                           setSelectedAssetForAlert(asset);
-                           setShowAlertModal(true);
-                         }}
-                       >
-                         <Ionicons name="notifications" size={16} color="#ffa500" />
-                       </TouchableOpacity>
-                     </View>
-                   </View>
-                   <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
-                 </View>
+                <View style={styles.newAssetInfo}>
+                  <View style={styles.newAssetHeader}>
+                    <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
+                    <View style={styles.newAssetActions}>
+                      <TouchableOpacity
+                        style={styles.actionIconButton}
+                        onPress={() => {
+                          setSelectedAssetForNews(asset);
+                          setShowNewsModal(true);
+                        }}
+                      >
+                        <Ionicons name="newspaper" size={16} color="#ffa500" />
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={styles.actionIconButton}
+                        onPress={() => {
+                          setSelectedAssetForAlert(asset);
+                          setShowAlertModal(true);
+                        }}
+                      >
+                        <Ionicons name="notifications" size={16} color="#ffa500" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+                </View>
               </View>
               
-              {/* Lado Direito - Preço e Variação */}
-              <View style={styles.assetRightSection}>
-                <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
-                  {asset.price.toFixed(2).replace('.', ',')}
-                </Text>
+                             {/* Lado Direito - Preço e Variação */}
+               <View style={styles.assetRightSection}>
+                 <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                   {asset.price.toFixed(2).replace('.', ',')}
+                 </Text>
                 <View style={styles.priceChange}>
                   <Text style={[styles.changeAmount, { color: '#2ed573' }]}>
                     +{(asset.price * 0.01).toFixed(2).replace('.', ',')}
@@ -411,7 +432,7 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
           
           {/* Botão Transparente para Adicionar Ativos */}
@@ -801,8 +822,22 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   portfolioAmount: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
+  },
+  portfolioAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  currencyToggle: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  currencyToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   portfolioStats: {
     flexDirection: 'row',
@@ -1218,6 +1253,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  trendIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   indicatorValue: {
     fontSize: 12,
     fontWeight: '600',
@@ -1347,6 +1387,25 @@ const styles = StyleSheet.create({
   changePercentage: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  portfolioHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  bitcoinIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffd700',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bitcoinSymbol: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
   },
 });
 
