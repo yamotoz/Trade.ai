@@ -6,6 +6,15 @@ const mockStudies = [
   {
     id: '1',
     title: 'Introdução ao Trading',
+    description: 'Plano de estudo para o mundo do trading e análise técnica',
+    category: 'Introdução',
+    level: 'introduction',
+    duration: '15 min',
+    content: 'Plano de estudo pra todos que querem aprender...'
+  },
+  {
+    id: '2',
+    title: 'Introdução ao Trading',
     description: 'Aprenda os conceitos básicos de trading e análise técnica',
     category: 'básico',
     level: 'beginner',
@@ -13,7 +22,7 @@ const mockStudies = [
     content: 'Conteúdo completo do estudo aqui...'
   },
   {
-    id: '2',
+    id: '3',
     title: 'Análise Técnica Avançada',
     description: 'Técnicas avançadas de análise de gráficos e indicadores',
     category: 'intermediário',
@@ -22,7 +31,7 @@ const mockStudies = [
     content: 'Conteúdo completo do estudo aqui...'
   },
   {
-    id: '3',
+    id: '4',
     title: 'Gestão de Risco',
     description: 'Como gerenciar riscos e proteger seu capital',
     category: 'avançado',
