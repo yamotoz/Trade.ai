@@ -1,3 +1,4 @@
+// lib/study.ts
 import { useState, useEffect } from 'react';
 
 // Dados mockados para demonstração
@@ -7,7 +8,7 @@ const mockStudies = [
     title: 'Introdução ao Trading',
     description: 'Aprenda os conceitos básicos de trading e análise técnica',
     category: 'básico',
-    level: 'Iniciante',
+    level: 'beginner',
     duration: '15 min',
     content: 'Conteúdo completo do estudo aqui...'
   },
@@ -15,8 +16,8 @@ const mockStudies = [
     id: '2',
     title: 'Análise Técnica Avançada',
     description: 'Técnicas avançadas de análise de gráficos e indicadores',
-    category: 'avançado',
-    level: 'Intermediário',
+    category: 'intermediário',
+    level: 'intermediate',
     duration: '30 min',
     content: 'Conteúdo completo do estudo aqui...'
   },
@@ -24,19 +25,18 @@ const mockStudies = [
     id: '3',
     title: 'Gestão de Risco',
     description: 'Como gerenciar riscos e proteger seu capital',
-    category: 'intermediário',
-    level: 'Intermediário',
+    category: 'avançado',
+    level: 'advanced',
     duration: '20 min',
     content: 'Conteúdo completo do estudo aqui...'
   }
 ];
 
-export function useStudy() {
+export function useStudies() {
   const [studies, setStudies] = useState(mockStudies);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Simular carregamento
     setIsLoading(true);
     setTimeout(() => {
       setStudies(mockStudies);
