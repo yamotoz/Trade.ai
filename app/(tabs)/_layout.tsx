@@ -10,12 +10,12 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: colors.surface.primary,
-          borderTopColor: colors.surface.secondary,
-          borderTopWidth: 1,
-          height: 80,
-          paddingBottom: 20,
-          paddingTop: 10,
+          backgroundColor: '#000000', // Fundo preto total
+          borderTopColor: '#000000', // Borda superior também preta
+          borderTopWidth: 0,
+          height: 110, // Aumentado para 100 para dar ainda mais espaço
+          paddingBottom: 45, // Aumentado para 30 para melhor posicionamento
+          paddingTop: 15, // Aumentado para 15 para melhor distribuição
         },
         tabBarActiveTintColor: colors.primary[500],
         tabBarInactiveTintColor: colors.text.tertiary,

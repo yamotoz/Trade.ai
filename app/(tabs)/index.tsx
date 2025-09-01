@@ -353,7 +353,12 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }} edges={['top', 'left', 'right']}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         {/* Header Simplificado */}
         <View style={styles.header}>
           <Text style={[styles.welcomeText, { color: colors.text.primary }]}>
@@ -718,6 +723,9 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+        
+        {/* Espaçamento adicional no final para evitar sobreposição com a navbar */}
+        <View style={styles.finalSpacing} />
       </ScrollView>
 
       {/* Modal Adicionar Ativo */}
@@ -1002,17 +1010,11 @@ export default function HomeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.portfolioModalContent, { backgroundColor: colors.surface.primary }]}>
+            {/* Header do Portfolio */}
             <View style={styles.portfolioModalHeader}>
               <Text style={[styles.portfolioModalTitle, { color: colors.text.primary }]}>
                 Portfolio
               </Text>
-              <TouchableOpacity onPress={() => setShowPortfolioModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.portfolioModalBody}>
-              {/* Botão Add */}
               <TouchableOpacity
                 style={[styles.portfolioAddButton, { backgroundColor: colors.primary[500] }]}
                 onPress={() => {
@@ -1021,89 +1023,89 @@ export default function HomeScreen() {
                 }}
               >
                 <Ionicons name="add" size={20} color="white" />
-                <Text style={styles.portfolioAddButtonText}>Adicionar Ativo</Text>
+                <Text style={styles.portfolioAddButtonText}>Add</Text>
               </TouchableOpacity>
+            </View>
 
+            <ScrollView style={styles.portfolioModalBody} showsVerticalScrollIndicator={false}>
               {/* Total Investido */}
               <View style={styles.portfolioTotalSection}>
                 <View style={styles.portfolioTotalHeader}>
                   <Text style={[styles.portfolioTotalLabel, { color: colors.text.tertiary }]}>
                     Total Investido
                   </Text>
-                  <TouchableOpacity 
-                    style={styles.portfolioCurrencyToggle}
-                    onPress={toggleCurrencyMode}
-                  >
-                    <Text style={[styles.portfolioCurrencyToggleText, { color: colors.primary[500] }]}>
-                      {isDollarMode ? 'R$' : '$'}
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={styles.portfolioHeaderRight}>
+                    <TouchableOpacity 
+                      style={styles.portfolioCurrencyToggle}
+                      onPress={toggleCurrencyMode}
+                    >
+                      <Text style={[styles.portfolioCurrencyToggleText, { color: colors.primary[500] }]}>
+                        {isDollarMode ? 'R$' : '$'}
+                      </Text>
+                    </TouchableOpacity>
+                    <View style={styles.portfolioProfitIndicator}>
+                      <Text style={[styles.portfolioProfitText, { color: '#2ed573' }]}>
+                        +{calculateTotalProfitPercentage().toFixed(2)}%
+                      </Text>
+                    </View>
+                  </View>
                 </View>
+                
                 <Text style={[styles.portfolioTotalAmount, { color: colors.text.primary }]}>
                   {formatCurrency(calculateTotalPortfolio())}
                 </Text>
-                                 <View style={styles.portfolioProfitIndicator}>
-                   <Text style={[styles.portfolioProfitText, { color: '#2ed573' }]}>
-                     +{calculateTotalProfitPercentage().toFixed(2)}%
-                   </Text>
-                 </View>
+              </View>
+
+              {/* Seletor de Tipo de Visualização */}
+              <View style={styles.portfolioViewSelector}>
+                <TouchableOpacity 
+                  style={[
+                    styles.portfolioViewButton, 
+                    { backgroundColor: selectedChartType === 'bar' ? colors.primary[500] : 'transparent' }
+                  ]}
+                  onPress={() => setSelectedChartType('bar')}
+                >
+                  <Text style={[
+                    styles.portfolioViewButtonText, 
+                    { color: selectedChartType === 'bar' ? 'white' : colors.text.primary }
+                  ]}>
+                    Chart
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.portfolioViewButton, 
+                    { backgroundColor: selectedChartType === 'pie' ? colors.primary[500] : 'transparent' }
+                  ]}
+                  onPress={() => setSelectedChartType('pie')}
+                >
+                  <Text style={[
+                    styles.portfolioViewButtonText, 
+                    { color: selectedChartType === 'pie' ? 'white' : colors.text.primary }
+                  ]}>
+                    Categories
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.portfolioViewButton, 
+                    { backgroundColor: selectedChartType === 'donut' ? colors.primary[500] : 'transparent' }
+                  ]}
+                  onPress={() => setSelectedChartType('donut')}
+                >
+                  <Text style={[
+                    styles.portfolioViewButtonText, 
+                    { color: selectedChartType === 'donut' ? 'white' : colors.text.primary }
+                  ]}>
+                    Donut
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* Gráfico de Distribuição */}
               <View style={styles.portfolioChartSection}>
-                <Text style={[styles.portfolioChartTitle, { color: colors.text.primary }]}>
-                  Distribuição por Categoria
-                </Text>
-                
-                {/* Seletor de Tipo de Gráfico */}
-                <View style={styles.portfolioChartTypeSelector}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.portfolioChartTypeButton, 
-                      { backgroundColor: selectedChartType === 'pie' ? colors.primary[500] : colors.surface.secondary }
-                    ]}
-                    onPress={() => setSelectedChartType('pie')}
-                  >
-                    <Text style={[
-                      styles.portfolioChartTypeButtonText, 
-                      { color: selectedChartType === 'pie' ? 'white' : colors.text.primary }
-                    ]}>
-                      Pizza
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[
-                      styles.portfolioChartTypeButton, 
-                      { backgroundColor: selectedChartType === 'bar' ? colors.primary[500] : colors.surface.secondary }
-                    ]}
-                    onPress={() => setSelectedChartType('bar')}
-                  >
-                    <Text style={[
-                      styles.portfolioChartTypeButtonText, 
-                      { color: selectedChartType === 'bar' ? 'white' : colors.text.primary }
-                    ]}>
-                      Barras
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[
-                      styles.portfolioChartTypeButton, 
-                      { backgroundColor: selectedChartType === 'donut' ? colors.primary[500] : colors.surface.secondary }
-                    ]}
-                    onPress={() => setSelectedChartType('donut')}
-                  >
-                    <Text style={[
-                      styles.portfolioChartTypeButtonText, 
-                      { color: selectedChartType === 'donut' ? 'white' : colors.text.primary }
-                    ]}>
-                      Donut
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Renderizar Gráfico Selecionado */}
                 <View style={styles.portfolioChartContainer}>
                   {selectedChartType === 'pie' && renderPieChart()}
                   {selectedChartType === 'bar' && renderBarChart()}
@@ -1114,7 +1116,7 @@ export default function HomeScreen() {
               {/* Lista Completa de Ativos */}
               <View style={styles.portfolioAssetsSection}>
                 <Text style={[styles.portfolioAssetsTitle, { color: colors.text.primary }]}>
-                  Todos os Ativos
+                  Assets
                 </Text>
                 
                 {assets.map((asset) => (
@@ -1158,9 +1160,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent', // Garante que o container seja transparente
   },
   scrollContent: {
-    paddingBottom: 100, // Adiciona padding inferior para evitar sobreposição com botões de navegação
+    paddingBottom: 200, // Aumentado significativamente para 200 para subir muito mais o conteúdo
+    paddingTop: 8, // Adicionado padding superior para melhor espaçamento
+    minHeight: '100%', // Garante que o conteúdo ocupe pelo menos toda a altura disponível
   },
   header: {
     flexDirection: 'row',
@@ -1171,6 +1176,7 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 18,
     fontWeight: '600',
+    marginTop: 4, // Adicionado margem superior para melhor posicionamento
   },
   profileButton: {
     width: 40,
@@ -1184,9 +1190,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   portfolioCard: {
-    padding: 16,
+    padding: 18, // Aumentado de 16 para 18 para melhor espaçamento interno
     borderRadius: 16,
     borderWidth: 1,
+    shadowColor: '#000', // Adicionado sombra sutil
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   portfolioContent: {
     flexDirection: 'row',
@@ -2007,6 +2018,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  portfolioHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  portfolioViewSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 24,
+  },
+  portfolioViewButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(156, 163, 175, 0.3)',
+  },
+  portfolioViewButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   portfolioChartContainer: {
     height: 200,
     justifyContent: 'center',
@@ -2067,6 +2101,9 @@ const styles = StyleSheet.create({
   },
   portfolioAssetPercentage: {
     fontSize: 12,
+  },
+  finalSpacing: {
+    height: 100, // Aumentado para 100 para dar muito mais espaço da navbar
   },
 });
 
