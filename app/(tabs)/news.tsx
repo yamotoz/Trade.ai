@@ -20,8 +20,8 @@ export default function NewsScreen() {
     { id: 'all', label: 'Todas', icon: 'newspaper' },
     { id: 'crypto', label: 'Cripto', icon: 'logo-bitcoin' },
     { id: 'forex', label: 'Forex', icon: 'trending-up' },
-    { id: 'stock', label: 'Ações', icon: 'business' },
-    { id: 'economy', label: 'Economia', icon: 'analytics' },
+    { id: 'stock', label: 'Ações', icon: 'trending-up' },   // corrigido
+    { id: 'economy', label: 'Economia', icon: 'bar-chart' }, // corrigido
   ];
 
   const filteredNews = useMemo(() => {
@@ -91,7 +91,7 @@ export default function NewsScreen() {
             >
               <View style={styles.categoryButtonContent}>
                 <Ionicons 
-                  name={category.icon} 
+                  name={category.icon as any} 
                   size={16} 
                   color={selectedCategory === category.id ? 'white' : colors.text.primary} 
                 />
@@ -136,7 +136,9 @@ export default function NewsScreen() {
             {/* Indicador de Carregamento */}
             {hasNextPage && (
               <View style={styles.loadingContainer}>
-                <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>Carregando mais notícias...</Text>
+                <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>
+                  Carregando mais notícias...
+                </Text>
               </View>
             )}
           </View>
@@ -146,7 +148,7 @@ export default function NewsScreen() {
             <Text style={[styles.emptyStateTitle, { color: colors.text.tertiary }]}>
               {selectedCategory === 'all' 
                 ? 'Nenhuma notícia disponível'
-                : `Nenhuma notícia de ${categories.find(c => c.id === selectedCategory)?.label}`
+                : `Nenhuma notícia de ${categories.find(c => c.id === selectedCategory)?.label || ''}`
               }
             </Text>
             <TouchableOpacity
@@ -169,7 +171,7 @@ export default function NewsScreen() {
       )}
 
       {/* Anúncio Intersticial */}
-      <InterstitialAd       />
+      <InterstitialAd />
     </SafeAreaView>
   );
 }

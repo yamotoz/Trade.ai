@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Introduction from './Studys/introduction';
 
 // Dados mockados para demonstração
 const mockStudies = [
@@ -9,7 +10,7 @@ const mockStudies = [
   category: 'Introdução',
   level: 'introduction',
   duration: '15 min',
-  content: 'Plano de estudo pra todos que querem aprender...'
+  content: Introduction
  },
  {
   id: '2',
