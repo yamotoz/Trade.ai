@@ -16,9 +16,9 @@ export function NewsDetail({ news, visible, onClose }: NewsDetailProps) {
       presentationStyle="pageSheet"
     >
       <View style={styles.container}>
-        {/* Botão de Voltar */}
+        {/* Botão Voltar */}
         <TouchableOpacity style={styles.backButton} onPress={onClose}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
 
         <Text style={styles.title}>{news?.title || 'Título da Notícia'}</Text>
@@ -38,20 +38,18 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backText: {
-    color: '#fff',
-    fontSize: 16,
-    marginLeft: 8,
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    padding: 8,
+    borderRadius: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 20,
+    marginTop: 40, // espaço extra por causa do botão
   },
   content: {
     fontSize: 16,

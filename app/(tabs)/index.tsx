@@ -1,11 +1,134 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+
+interface Asset {
+  id: string;
+  symbol: string;
+  name: string;
+  quantity: number;
+  price: number;
+  date: string;
+  totalValue: number;
+  category: string;
+  color: string;
+}
+
+interface PriceAlert {
+  id: string;
+  assetSymbol: string;
+  targetPrice: number;
+  isAbove: boolean; // true = acima de, false = abaixo de
+}
+
+interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  assetSymbol: string;
+  date: string;
+  source: string;
+}
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAssetPicker, setShowAssetPicker] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+  const [selectedAssetForAlert, setSelectedAssetForAlert] = useState<Asset | null>(null);
+  const [selectedAssetForNews, setSelectedAssetForNews] = useState<Asset | null>(null);
+  const [isDollarMode, setIsDollarMode] = useState(false);
+  const [selectedChartType, setSelectedChartType] = useState<'pie' | 'bar' | 'donut'>('pie');
+  const [assets, setAssets] = useState<Asset[]>([
+    // Bitcoin como ativo padrão de início
+    {
+      id: 'btc-default',
+      symbol: 'BTC',
+      name: 'Bitcoin',
+      quantity: 0.001,
+      price: 594.23,
+      date: new Date().toISOString(),
+      totalValue: 0.59423,
+      category: 'Crypto',
+      color: '#FFD700'
+    },
+    {
+      id: 'petr4-default',
+      symbol: 'PETR4',
+      name: 'Petrobras PN',
+      quantity: 100,
+      price: 32.50,
+      date: new Date().toISOString(),
+      totalValue: 3250.00,
+      category: 'Stocks',
+      color: '#4CAF50'
+    },
+    {
+      id: 'vale3-default',
+      symbol: 'VALE3',
+      name: 'Vale ON',
+      quantity: 50,
+      price: 68.75,
+      date: new Date().toISOString(),
+      totalValue: 3437.50,
+      category: 'Stocks',
+      color: '#2196F3'
+    }
+  ]);
+  const [selectedAsset, setSelectedAsset] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [date, setDate] = useState('');
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
+  const [alertPrice, setAlertPrice] = useState('');
+  const [alertType, setAlertType] = useState<'above' | 'below'>('above');
+
+  // Ativos fictícios disponíveis para seleção
+  const availableAssets = [
+    { symbol: 'PETR4', name: 'Petrobras PN', category: 'Stocks', color: '#4CAF50' },
+    { symbol: 'VALE3', name: 'Vale ON', category: 'Stocks', color: '#2196F3' },
+    { symbol: 'ITUB4', name: 'Itaú PN', category: 'Stocks', color: '#FF9800' },
+    { symbol: 'BBDC4', name: 'Bradesco PN', category: 'Stocks', color: '#9C27B0' },
+    { symbol: 'ABEV3', name: 'Ambev ON', category: 'Stocks', color: '#795548' },
+    { symbol: 'WEGE3', name: 'WEG ON', category: 'Stocks', color: '#607D8B' },
+    { symbol: 'RENT3', name: 'Localiza ON', category: 'Stocks', color: '#E91E63' },
+    { symbol: 'LREN3', name: 'Lojas Renner ON', category: 'Stocks', color: '#00BCD4' },
+  ];
+
+  // Notícias fictícias baseadas nos ativos
+  const generateNewsForAsset = (assetSymbol: string): NewsItem[] => {
+    const newsTemplates = [
+      {
+        title: `${assetSymbol} apresenta resultados acima das expectativas`,
+        summary: 'Empresa supera projeções do mercado com forte performance operacional...',
+        source: 'InvestNews'
+      },
+      {
+        title: `Analistas elevam recomendação para ${assetSymbol}`,
+        summary: 'Instituições financeiras revisam projeções positivamente...',
+        source: 'Mercado Financeiro'
+      },
+      {
+        title: `${assetSymbol} anuncia novo plano de expansão`,
+        summary: 'Diretoria apresenta estratégia de crescimento para os próximos anos...',
+        source: 'Portal Econômico'
+      }
+    ];
+
+    return newsTemplates.map((news, index) => ({
+      id: `${assetSymbol}-${index}`,
+      ...news,
+      assetSymbol,
+      date: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')
+    }));
+  };
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -14,19 +137,233 @@ export default function HomeScreen() {
     return 'Boa noite';
   };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.text.tertiary }]}>
-              {greeting()}
-            </Text>
-            <Text style={[styles.welcomeText, { color: colors.text.primary }]}>
-              Bem-vindo, Trader!
+  const calculateTotalPortfolio = () => {
+    return assets.reduce((total, asset) => total + asset.totalValue, 0);
+  };
+
+  const calculateTotalProfit = () => {
+    // Simulando lucro baseado na valorização dos ativos
+    return assets.reduce((total, asset) => {
+      const profit = asset.totalValue * 0.05; // 5% de lucro fictício
+      return total + profit;
+    }, 0);
+  };
+
+  const calculateTotalProfitPercentage = () => {
+    const totalValue = calculateTotalPortfolio();
+    const totalProfit = calculateTotalProfit();
+    return totalValue > 0 ? (totalProfit / totalValue) * 100 : 0;
+  };
+
+  const getCategoryDistribution = () => {
+    const total = calculateTotalPortfolio();
+    const distribution: { [key: string]: { value: number; percentage: number; color: string } } = {};
+    
+    assets.forEach(asset => {
+      if (!distribution[asset.category]) {
+        distribution[asset.category] = { value: 0, percentage: 0, color: asset.color };
+      }
+      distribution[asset.category].value += asset.totalValue;
+    });
+
+    Object.keys(distribution).forEach(category => {
+      distribution[category].percentage = (distribution[category].value / total) * 100;
+    });
+
+    return distribution;
+  };
+
+  const handleAddAsset = () => {
+    if (!selectedAsset || !quantity || !date) {
+      Alert.alert('Erro', 'Preencha todos os campos');
+      return;
+    }
+
+    const asset = availableAssets.find(a => a.symbol === selectedAsset);
+    if (!asset) return;
+
+    // Preço fictício baseado no símbolo (simulando preços reais)
+    const basePrice = Math.random() * 100 + 10;
+    const quantityNum = parseFloat(quantity);
+    const totalValue = basePrice * quantityNum;
+
+    const newAsset: Asset = {
+      id: Date.now().toString(),
+      symbol: asset.symbol,
+      name: asset.name,
+      quantity: quantityNum,
+      price: basePrice,
+      date,
+      totalValue,
+      category: asset.category,
+      color: asset.color,
+    };
+
+    setAssets([...assets, newAsset]);
+    setShowAddModal(false);
+    setSelectedAsset('');
+    setQuantity('');
+    setDate('');
+  };
+
+  const handleAddPriceAlert = () => {
+    if (!selectedAssetForAlert || !alertPrice) {
+      Alert.alert('Erro', 'Preencha todos os campos');
+      return;
+    }
+
+    const newAlert: PriceAlert = {
+      id: Date.now().toString(),
+      assetSymbol: selectedAssetForAlert.symbol,
+      targetPrice: parseFloat(alertPrice),
+      isAbove: alertType === 'above',
+    };
+
+    setPriceAlerts([...priceAlerts, newAlert]);
+    setShowAlertModal(false);
+    setSelectedAssetForAlert(null);
+    setAlertPrice('');
+    setAlertType('above');
+
+    Alert.alert(
+      'Alerta Configurado!',
+      `Você será notificado quando ${selectedAssetForAlert.symbol} atingir R$ ${alertPrice}`
+    );
+  };
+
+  const handleDeleteAsset = (assetId: string) => {
+    Alert.alert(
+      'Remover Ativo',
+      'Tem certeza que deseja remover este ativo da sua carteira?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => {
+            setAssets(assets.filter(asset => asset.id !== assetId));
+          },
+        },
+      ]
+    );
+  };
+
+  const formatCurrency = (value: number) => {
+    if (isDollarMode) {
+      const dollarValue = value / 5.67;
+      return dollarValue.toFixed(2).replace('.', ',');
+    }
+    return value.toFixed(2).replace('.', ',');
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  const getAssetNews = (assetSymbol: string) => {
+    return generateNewsForAsset(assetSymbol);
+  };
+
+  const toggleCurrencyMode = () => {
+    setIsDollarMode(!isDollarMode);
+  };
+
+  // Renderizar gráfico de pizza
+  const renderPieChart = () => {
+    const distribution = getCategoryDistribution();
+    const categories = Object.keys(distribution);
+    
+    return (
+      <View style={styles.chartContainer}>
+        {categories.map((category, index) => (
+          <View key={category} style={styles.chartLegendItem}>
+            <View style={[styles.chartLegendColor, { backgroundColor: distribution[category].color }]} />
+            <Text style={[styles.chartLegendText, { color: colors.text.primary }]}>
+              {category}: {distribution[category].percentage.toFixed(1)}%
             </Text>
           </View>
+        ))}
+      </View>
+    );
+  };
+
+  // Renderizar gráfico de barras
+  const renderBarChart = () => {
+    const distribution = getCategoryDistribution();
+    const categories = Object.keys(distribution);
+    const maxValue = Math.max(...categories.map(cat => distribution[cat].value));
+    
+    return (
+      <View style={styles.barChartContainer}>
+        {categories.map((category) => (
+          <View key={category} style={styles.barChartItem}>
+            <Text style={[styles.barChartLabel, { color: colors.text.tertiary }]}>
+              {category}
+            </Text>
+            <View style={styles.barChartBarContainer}>
+              <View 
+                style={[
+                  styles.barChartBar, 
+                  { 
+                    backgroundColor: distribution[category].color,
+                    width: `${(distribution[category].value / maxValue) * 100}%`
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={[styles.barChartValue, { color: colors.text.primary }]}>
+              {formatCurrency(distribution[category].value)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  // Renderizar gráfico donut
+  const renderDonutChart = () => {
+    const distribution = getCategoryDistribution();
+    const categories = Object.keys(distribution);
+    
+    return (
+      <View style={styles.donutChartContainer}>
+        <View style={styles.donutChartCenter}>
+          <Text style={[styles.donutChartTotal, { color: colors.text.primary }]}>
+            {formatCurrency(calculateTotalPortfolio())}
+          </Text>
+          <Text style={[styles.donutChartLabel, { color: colors.text.tertiary }]}>
+            Total
+          </Text>
+        </View>
+        {categories.map((category, index) => (
+          <View key={category} style={styles.chartLegendItem}>
+            <View style={[styles.chartLegendColor, { backgroundColor: distribution[category].color }]} />
+            <Text style={[styles.chartLegendText, { color: colors.text.primary }]}>
+              {category}: {distribution[category].percentage.toFixed(1)}%
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }} edges={['top', 'left', 'right']}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        {/* Header Simplificado */}
+        <View style={styles.header}>
+          <Text style={[styles.welcomeText, { color: colors.text.primary }]}>
+            {greeting()}, Trader!
+          </Text>
           <TouchableOpacity
             style={[styles.profileButton, { backgroundColor: colors.surface.secondary }]}
           >
@@ -34,55 +371,788 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Saldo */}
-        <View style={styles.balanceContainer}>
-          <View style={[styles.balanceCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-            <Text style={[styles.balanceLabel, { color: colors.text.tertiary }]}>Saldo Disponível</Text>
-            <Text style={[styles.balanceAmount, { color: colors.text.primary }]}>
-              $10,000.00
-            </Text>
-            <Text style={[styles.bonusText, { color: '#2ed573' }]}>
-              +$250.00 bônus diário
-            </Text>
+        {/* Carteira Principal - Faixa Horizontal */}
+        <TouchableOpacity 
+          style={styles.portfolioContainer}
+          onPress={() => setShowPortfolioModal(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.portfolioCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+            <View style={styles.portfolioContent}>
+              <View style={styles.portfolioInfo}>
+                <View style={styles.portfolioIconContainer}>
+                  <Ionicons name="wallet" size={24} color={colors.text.primary} />
+                </View>
+                                 <View>
+                   <Text style={[styles.portfolioLabel, { color: colors.text.tertiary }]}>
+                     Carteira
+                   </Text>
+                   <View style={styles.portfolioAmountContainer}>
+                     <Text style={[styles.portfolioAmount, { color: colors.text.primary }]}>
+                       {formatCurrency(calculateTotalPortfolio())}
+                     </Text>
+                     <TouchableOpacity 
+                       style={styles.currencyToggle}
+                       onPress={toggleCurrencyMode}
+                     >
+                       <Text style={[styles.currencyToggleText, { color: colors.primary[500] }]}>
+                         {isDollarMode ? 'R$' : '$'}
+                       </Text>
+                     </TouchableOpacity>
+                   </View>
+                 </View>
+              </View>
+              
+              <View style={styles.portfolioStats}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Ativos</Text>
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{assets.length}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Lucro</Text>
+                  <Text style={[styles.statValue, { color: '#2ed573' }]}>
+                    {formatCurrency(calculateTotalProfit())}
+                  </Text>
+                </View>
+              </View>
+
+              <Button
+                title="+"
+                onPress={() => setShowAddModal(true)}
+                variant="primary"
+                size="sm"
+                style={styles.addButton}
+              />
+            </View>
           </View>
+        </TouchableOpacity>
+
+        {/* Seção de Gráficos Deslizáveis */}
+        <View style={styles.chartsSectionContainer}>
+          
+          
+          {/* Container de Gráficos Deslizáveis */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chartsScrollContainer}
+            pagingEnabled={true}
+            snapToInterval={screenWidth - 32}
+            decelerationRate="fast"
+          >
+            {/* Gráfico 1 - Bitcoin */}
+            <View style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+              <View style={styles.chartHeader}>
+                <View style={styles.chartAssetInfo}>
+                  <View style={[styles.assetLogo, { backgroundColor: '#FFD700' }]}>
+                    <Text style={styles.assetLogoText}>₿</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>BTC</Text>
+                    <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>Bitcoin</Text>
+                  </View>
+                </View>
+              </View>
+              
+              <View style={styles.chartArea}>
+                <View style={styles.chartLine}>
+                  {[30, 45, 35, 55, 40, 65, 50, 75, 60, 85, 70, 95].map((height, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.chartBar,
+                        {
+                          height: height,
+                          backgroundColor: index === 11 ? '#FFD700' : colors.surface.secondary,
+                          marginRight: index === 11 ? 0 : 2,
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+              
+              <View style={styles.chartInfo}>
+                <View style={styles.chartPriceInfo}>
+                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                    {formatCurrency(assets.find(a => a.symbol === 'BTC')?.price || 0)}
+                  </Text>
+                </View>
+                
+                <View style={styles.chartIndicators}>
+                  <View style={styles.indicator}>
+                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
+                    <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
+                  </View>
+                  
+                  <View style={styles.indicator}>
+                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
+                    <Text style={[styles.indicatorValue, { color: '#2ed573' }]}>+8,2%</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+            
+            {/* Gráfico 2 - Petrobras */}
+            <View style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+              <View style={styles.chartHeader}>
+                <View style={styles.chartAssetInfo}>
+                  <View style={[styles.assetLogo, { backgroundColor: '#4CAF50' }]}>
+                    <Text style={styles.assetLogoText}>P</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>PETR4</Text>
+                    <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>Petrobras PN</Text>
+                  </View>
+                </View>
+              </View>
+              
+              <View style={styles.chartArea}>
+                <View style={styles.chartLine}>
+                  {[25, 40, 30, 50, 35, 60, 45, 70, 55, 80, 65, 90].map((height, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.chartBar,
+                        {
+                          height: height,
+                          backgroundColor: index === 11 ? '#4CAF50' : colors.surface.secondary,
+                          marginRight: index === 11 ? 0 : 2,
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+              
+              <View style={styles.chartInfo}>
+                <View style={styles.chartPriceInfo}>
+                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                    {formatCurrency(assets.find(a => a.symbol === 'PETR4')?.price || 0)}
+                  </Text>
+                </View>
+                
+                <View style={styles.chartIndicators}>
+                  <View style={styles.indicator}>
+                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
+                    <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
+                  </View>
+                  
+                  <View style={styles.indicator}>
+                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
+                    <Text style={[styles.indicatorValue, { color: '#2ed573' }]}>+12,5%</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+            
+            {/* Gráfico 3 - Vale */}
+            <View style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+              <View style={styles.chartHeader}>
+                <View style={styles.chartAssetInfo}>
+                  <View style={[styles.assetLogo, { backgroundColor: '#2196F3' }]}>
+                    <Text style={styles.assetLogoText}>V</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>VALE3</Text>
+                    <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>Vale ON</Text>
+                  </View>
+                </View>
+              </View>
+              
+              <View style={styles.chartArea}>
+                <View style={styles.chartLine}>
+                  {[35, 50, 40, 60, 45, 70, 55, 80, 65, 90, 75, 100].map((height, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.chartBar,
+                        {
+                          height: height,
+                          backgroundColor: index === 11 ? '#2196F3' : colors.surface.secondary,
+                          marginRight: index === 11 ? 0 : 2,
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+              
+              <View style={styles.chartInfo}>
+                <View style={styles.chartPriceInfo}>
+                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                    {formatCurrency(assets.find(a => a.symbol === 'VALE3')?.price || 0)}
+                  </Text>
+                </View>
+                
+                <View style={styles.chartIndicators}>
+                  <View style={styles.indicator}>
+                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
+                    <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
+                  </View>
+                  
+                  <View style={styles.indicator}>
+                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
+                    <Text style={[styles.indicatorValue, { color: '#2ed573' }]}>+15,3%</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
         </View>
 
-        {/* Ativos em Destaque */}
+        {/* Lista de Ativos - Novo Design */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-            Ativos em Destaque
+            Meus Ativos
           </Text>
           
-          <View style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
-            <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>BTC</Text>
-            <Text style={[styles.assetName, { color: colors.text.secondary }]}>Bitcoin</Text>
-            <Text style={[styles.assetPrice, { color: colors.text.primary }]}>$45,000.00</Text>
-            <Text style={[styles.assetChange, { color: '#2ed573' }]}>+2.5%</Text>
-          </View>
-
-          <View style={[styles.assetCard, { backgroundColor: colors.surface.primary }]}>
-            <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>ETH</Text>
-            <Text style={[styles.assetName, { color: colors.text.secondary }]}>Ethereum</Text>
-            <Text style={[styles.assetPrice, { color: colors.text.primary }]}>$3,200.00</Text>
-            <Text style={[styles.assetChange, { color: '#ff4757' }]}>-1.2%</Text>
-          </View>
+          {assets.map((asset) => (
+            <TouchableOpacity
+              key={asset.id}
+              style={[styles.newAssetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}
+              onLongPress={() => handleDeleteAsset(asset.id)}
+              activeOpacity={0.7}
+            >
+              {/* Lado Esquerdo - Logo e Informações */}
+              <View style={styles.assetLeftSection}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.bitcoinIcon}>
+                    <Text style={styles.bitcoinSymbol}>₿</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.newAssetInfo}>
+                  <View style={styles.newAssetHeader}>
+                    <Text style={[styles.assetSymbol, { color: colors.text.primary }]}>{asset.symbol}</Text>
+                    <View style={styles.newAssetActions}>
+                      <TouchableOpacity
+                        style={styles.actionIconButton}
+                        onPress={() => {
+                          setSelectedAssetForNews(asset);
+                          setShowNewsModal(true);
+                        }}
+                      >
+                        <Ionicons name="newspaper" size={16} color="#ffa500" />
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={styles.actionIconButton}
+                        onPress={() => {
+                          setSelectedAssetForAlert(asset);
+                          setShowAlertModal(true);
+                        }}
+                      >
+                        <Ionicons name="notifications" size={16} color="#ffa500" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={[styles.assetName, { color: colors.text.secondary }]}>{asset.name}</Text>
+                </View>
+              </View>
+              
+                             {/* Lado Direito - Preço e Variação */}
+               <View style={styles.assetRightSection}>
+                 <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                   {asset.price.toFixed(2).replace('.', ',')}
+                 </Text>
+                <View style={styles.priceChange}>
+                  <Text style={[styles.changeAmount, { color: '#2ed573' }]}>
+                    +{(asset.price * 0.01).toFixed(2).replace('.', ',')}
+                  </Text>
+                  <Text style={[styles.changePercentage, { color: '#2ed573' }]}>
+                    +1,44%
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+          
+          {/* Botão Transparente para Adicionar Ativos */}
+          <TouchableOpacity
+            style={[styles.addAssetButton, { borderColor: colors.surface.secondary }]}
+            onPress={() => setShowAddModal(true)}
+          >
+            <Ionicons name="add-circle-outline" size={24} color={colors.text.tertiary} />
+            <Text style={[styles.addAssetButtonText, { color: colors.text.tertiary }]}>
+              Adicionar Ativo
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Notícias */}
+
+
+        {/* Seção de Notícias */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-            Últimas Notícias 📰
+            Notícias dos Seus Ativos
           </Text>
-          <View style={[styles.newsCard, { backgroundColor: colors.surface.primary }]}>
-            <Text style={[styles.newsTitle, { color: colors.text.primary }]}>
-              Bitcoin atinge nova máxima histórica
-            </Text>
-            <Text style={[styles.newsSummary, { color: colors.text.secondary }]}>
-              Bitcoin supera a marca de $50.000 pela primeira vez em 2024...
-            </Text>
-          </View> 
+          
+          {assets.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: colors.surface.secondary }]}>
+              <Ionicons name="newspaper" size={48} color={colors.text.tertiary} />
+              <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>
+                Nenhuma notícia disponível
+              </Text>
+              <Text style={[styles.emptyStateSubtext, { color: colors.text.tertiary }]}>
+                Adicione ativos para ver notícias relacionadas
+              </Text>
+            </View>
+          ) : (
+            <View>
+              {assets.slice(0, 3).map((asset) => {
+                const assetNews = getAssetNews(asset.symbol);
+                return assetNews.slice(0, 1).map((news) => (
+                  <View key={news.id} style={[styles.newsCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+                    <View style={styles.newsHeader}>
+                      <Text style={[styles.newsAsset, { color: colors.primary[500] }]}>{asset.symbol}</Text>
+                      <Text style={[styles.newsDate, { color: colors.text.tertiary }]}>{news.date}</Text>
+                    </View>
+                    <Text style={[styles.newsTitle, { color: colors.text.primary }]}>
+                      {news.title}
+                    </Text>
+                    <Text style={[styles.newsSummary, { color: colors.text.secondary }]}>
+                      {news.summary}
+                    </Text>
+                    <Text style={[styles.newsSource, { color: colors.text.tertiary }]}>
+                      Fonte: {news.source}
+                    </Text>
+                  </View>
+                ));
+              })}
+            </View>
+          )}
         </View>
+        
+        {/* Espaçamento adicional no final para evitar sobreposição com a navbar */}
+        <View style={styles.finalSpacing} />
       </ScrollView>
+
+      {/* Modal Adicionar Ativo */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface.primary }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Adicionar Ativo
+              </Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>Ativo</Text>
+                <View style={[styles.pickerContainer, { borderColor: colors.surface.secondary }]}>
+                  <TouchableOpacity
+                    style={styles.pickerButton}
+                    onPress={() => setShowAssetPicker(true)}
+                  >
+                    <Text style={[styles.pickerText, { color: selectedAsset ? colors.text.primary : colors.text.tertiary }]}>
+                      {selectedAsset || 'Selecione um ativo'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color={colors.text.tertiary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>Quantidade</Text>
+                <Input
+                  placeholder="Ex: 100"
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>Data de Compra</Text>
+                <Input
+                  placeholder="DD/MM/AAAA"
+                  value={date}
+                  onChangeText={setDate}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <Button
+                title="Cancelar"
+                onPress={() => setShowAddModal(false)}
+                variant="secondary"
+                size="md"
+                style={styles.modalButton}
+              />
+              <Button
+                title="Adicionar"
+                onPress={handleAddAsset}
+                variant="primary"
+                size="md"
+                style={styles.modalButton}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Seleção de Ativos */}
+      <Modal
+        visible={showAssetPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAssetPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface.primary }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Selecionar Ativo
+              </Text>
+              <TouchableOpacity onPress={() => setShowAssetPicker(false)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.assetListContainer}>
+              {availableAssets.map((asset) => (
+                <TouchableOpacity
+                  key={asset.symbol}
+                  style={[
+                    styles.assetOption,
+                    { 
+                      backgroundColor: selectedAsset === asset.symbol 
+                        ? colors.primary[500] 
+                        : colors.surface.secondary 
+                    }
+                  ]}
+                  onPress={() => {
+                    setSelectedAsset(asset.symbol);
+                    setShowAssetPicker(false);
+                  }}
+                >
+                  <View>
+                    <Text style={[
+                      styles.assetOptionSymbol, 
+                      { color: selectedAsset === asset.symbol ? 'white' : colors.text.primary }
+                    ]}>
+                      {asset.symbol}
+                    </Text>
+                    <Text style={[
+                      styles.assetOptionName, 
+                      { color: selectedAsset === asset.symbol ? 'rgba(255,255,255,0.8)' : colors.text.secondary }
+                    ]}>
+                      {asset.name}
+                    </Text>
+                  </View>
+                  {selectedAsset === asset.symbol && (
+                    <Ionicons name="checkmark" size={20} color="white" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Configuração de Alertas */}
+      <Modal
+        visible={showAlertModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAlertModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface.primary }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Configurar Alerta de Preço
+              </Text>
+              <TouchableOpacity onPress={() => setShowAlertModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.alertAssetInfo}>
+                <Text style={[styles.alertAssetSymbol, { color: colors.text.primary }]}>
+                  {selectedAssetForAlert?.symbol}
+                </Text>
+                <Text style={[styles.alertAssetName, { color: colors.text.secondary }]}>
+                  {selectedAssetForAlert?.name}
+                </Text>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>Preço Alvo</Text>
+                <Input
+                  placeholder="Ex: 25,50"
+                  value={alertPrice}
+                  onChangeText={setAlertPrice}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>Tipo de Alerta</Text>
+                <View style={styles.alertTypeContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.alertTypeButton,
+                      { 
+                        backgroundColor: alertType === 'above' 
+                          ? colors.primary[500] 
+                          : colors.surface.secondary 
+                      }
+                    ]}
+                    onPress={() => setAlertType('above')}
+                  >
+                    <Text style={[
+                      styles.alertTypeText,
+                      { color: alertType === 'above' ? 'white' : colors.text.primary }
+                    ]}>
+                      Acima de
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.alertTypeButton,
+                      { 
+                        backgroundColor: alertType === 'below' 
+                          ? colors.primary[500] 
+                          : colors.surface.secondary 
+                      }
+                    ]}
+                    onPress={() => setAlertType('below')}
+                  >
+                    <Text style={[
+                      styles.alertTypeText,
+                      { color: alertType === 'below' ? 'white' : colors.text.primary }
+                    ]}>
+                      Abaixo de
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <Button
+                title="Cancelar"
+                onPress={() => setShowAlertModal(false)}
+                variant="secondary"
+                size="md"
+                style={styles.modalButton}
+              />
+              <Button
+                title="Configurar"
+                onPress={handleAddPriceAlert}
+                variant="primary"
+                size="md"
+                style={styles.modalButton}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Notícias do Ativo */}
+      <Modal
+        visible={showNewsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNewsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface.primary }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Notícias - {selectedAssetForNews?.symbol}
+              </Text>
+              <TouchableOpacity onPress={() => setShowNewsModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.newsListContainer}>
+              {selectedAssetForNews && getAssetNews(selectedAssetForNews.symbol).map((news) => (
+                <View key={news.id} style={[styles.newsModalCard, { backgroundColor: colors.surface.secondary }]}>
+                  <View style={styles.newsModalHeader}>
+                    <Text style={[styles.newsModalDate, { color: colors.text.tertiary }]}>{news.date}</Text>
+                    <Text style={[styles.newsModalSource, { color: colors.text.tertiary }]}>{news.source}</Text>
+                  </View>
+                  <Text style={[styles.newsModalTitle, { color: colors.text.primary }]}>
+                    {news.title}
+                  </Text>
+                  <Text style={[styles.newsModalSummary, { color: colors.text.secondary }]}>
+                    {news.summary}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Portfolio Completo */}
+      <Modal
+        visible={showPortfolioModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPortfolioModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.portfolioModalContent, { backgroundColor: colors.surface.primary }]}>
+            {/* Header do Portfolio */}
+            <View style={styles.portfolioModalHeader}>
+              <Text style={[styles.portfolioModalTitle, { color: colors.text.primary }]}>
+                Portfolio
+              </Text>
+              <TouchableOpacity
+                style={[styles.portfolioAddButton, { backgroundColor: colors.primary[500] }]}
+                onPress={() => {
+                  setShowPortfolioModal(false);
+                  setShowAddModal(true);
+                }}
+              >
+                <Ionicons name="add" size={20} color="white" />
+                <Text style={styles.portfolioAddButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.portfolioModalBody} showsVerticalScrollIndicator={false}>
+              {/* Total Investido */}
+              <View style={styles.portfolioTotalSection}>
+                <View style={styles.portfolioTotalHeader}>
+                  <Text style={[styles.portfolioTotalLabel, { color: colors.text.tertiary }]}>
+                    Total Investido
+                  </Text>
+                  <View style={styles.portfolioHeaderRight}>
+                    <TouchableOpacity 
+                      style={styles.portfolioCurrencyToggle}
+                      onPress={toggleCurrencyMode}
+                    >
+                      <Text style={[styles.portfolioCurrencyToggleText, { color: colors.primary[500] }]}>
+                        {isDollarMode ? 'R$' : '$'}
+                      </Text>
+                    </TouchableOpacity>
+                    <View style={styles.portfolioProfitIndicator}>
+                      <Text style={[styles.portfolioProfitText, { color: '#2ed573' }]}>
+                        +{calculateTotalProfitPercentage().toFixed(2)}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                
+                <Text style={[styles.portfolioTotalAmount, { color: colors.text.primary }]}>
+                  {formatCurrency(calculateTotalPortfolio())}
+                </Text>
+              </View>
+
+              {/* Seletor de Tipo de Visualização */}
+              <View style={styles.portfolioViewSelector}>
+                <TouchableOpacity 
+                  style={[
+                    styles.portfolioViewButton, 
+                    { backgroundColor: selectedChartType === 'bar' ? colors.primary[500] : 'transparent' }
+                  ]}
+                  onPress={() => setSelectedChartType('bar')}
+                >
+                  <Text style={[
+                    styles.portfolioViewButtonText, 
+                    { color: selectedChartType === 'bar' ? 'white' : colors.text.primary }
+                  ]}>
+                    Chart
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.portfolioViewButton, 
+                    { backgroundColor: selectedChartType === 'pie' ? colors.primary[500] : 'transparent' }
+                  ]}
+                  onPress={() => setSelectedChartType('pie')}
+                >
+                  <Text style={[
+                    styles.portfolioViewButtonText, 
+                    { color: selectedChartType === 'pie' ? 'white' : colors.text.primary }
+                  ]}>
+                    Categories
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.portfolioViewButton, 
+                    { backgroundColor: selectedChartType === 'donut' ? colors.primary[500] : 'transparent' }
+                  ]}
+                  onPress={() => setSelectedChartType('donut')}
+                >
+                  <Text style={[
+                    styles.portfolioViewButtonText, 
+                    { color: selectedChartType === 'donut' ? 'white' : colors.text.primary }
+                  ]}>
+                    Donut
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Gráfico de Distribuição */}
+              <View style={styles.portfolioChartSection}>
+                <View style={styles.portfolioChartContainer}>
+                  {selectedChartType === 'pie' && renderPieChart()}
+                  {selectedChartType === 'bar' && renderBarChart()}
+                  {selectedChartType === 'donut' && renderDonutChart()}
+                </View>
+              </View>
+
+              {/* Lista Completa de Ativos */}
+              <View style={styles.portfolioAssetsSection}>
+                <Text style={[styles.portfolioAssetsTitle, { color: colors.text.primary }]}>
+                  Assets
+                </Text>
+                
+                {assets.map((asset) => (
+                  <View key={asset.id} style={[styles.portfolioAssetItem, { backgroundColor: colors.surface.secondary }]}>
+                    <View style={styles.portfolioAssetLeft}>
+                      <View style={[styles.portfolioAssetLogo, { backgroundColor: asset.color }]}>
+                        <Text style={styles.portfolioAssetLogoText}>{asset.symbol}</Text>
+                      </View>
+                      <View>
+                        <Text style={[styles.portfolioAssetSymbol, { color: colors.text.primary }]}>
+                          {asset.symbol}
+                        </Text>
+                        <Text style={[styles.portfolioAssetName, { color: colors.text.secondary }]}>
+                          {asset.name}
+                        </Text>
+                        <Text style={[styles.portfolioAssetCategory, { color: colors.text.tertiary }]}>
+                          {asset.category}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.portfolioAssetRight}>
+                      <Text style={[styles.portfolioAssetValue, { color: colors.text.primary }]}>
+                        {formatCurrency(asset.totalValue)}
+                      </Text>
+                      <Text style={[styles.portfolioAssetPercentage, { color: colors.text.tertiary }]}>
+                        {((asset.totalValue / calculateTotalPortfolio()) * 100).toFixed(1)}%
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -90,6 +1160,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent', // Garante que o container seja transparente
+  },
+  scrollContent: {
+    paddingBottom: 200, // Aumentado significativamente para 200 para subir muito mais o conteúdo
+    paddingTop: 8, // Adicionado padding superior para melhor espaçamento
+    minHeight: '100%', // Garante que o conteúdo ocupe pelo menos toda a altura disponível
   },
   header: {
     flexDirection: 'row',
@@ -97,12 +1173,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
   },
-  greeting: {
-    fontSize: 14,
-  },
   welcomeText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 4, // Adicionado margem superior para melhor posicionamento
   },
   profileButton: {
     width: 40,
@@ -111,80 +1185,924 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  balanceContainer: {
+  portfolioContainer: {
     marginHorizontal: 16,
     marginBottom: 24,
   },
-  balanceCard: {
-    padding: 16,
-    borderRadius: 12,
+  portfolioCard: {
+    padding: 18, // Aumentado de 16 para 18 para melhor espaçamento interno
+    borderRadius: 16,
     borderWidth: 1,
+    shadowColor: '#000', // Adicionado sombra sutil
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  balanceLabel: {
-    fontSize: 14,
-    marginBottom: 4,
+  portfolioContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  balanceAmount: {
-    fontSize: 24,
+  portfolioInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  portfolioIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(46, 213, 115, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  portfolioLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  portfolioAmount: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  bonusText: {
+  portfolioAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  currencyToggle: {
+    marginLeft: 3,
+    paddingHorizontal: 1,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  currencyToggleText: {
     fontSize: 14,
-    marginTop: 4,
+    fontWeight: '600',
+  },
+  portfolioStats: {
+    flexDirection: 'row',
+    gap: 20,
+    marginRight: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   sectionContainer: {
     marginHorizontal: 16,
     marginBottom: 24,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
+    marginBottom: 16,
   },
-  assetCard: {
+  emptyState: {
+    padding: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  assetsHorizontalContainer: {
+    paddingRight: 16,
+  },
+  assetCardHorizontal: {
+    width: 140,
+    padding: 12,
+    borderRadius: 12,
+    marginRight: 12,
+    borderWidth: 1,
+  },
+  assetHeaderHorizontal: {
+    marginBottom: 8,
+  },
+  assetSymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  assetName: {
+    fontSize: 12,
+  },
+  assetDetailsHorizontal: {
+    marginBottom: 8,
+  },
+  assetPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  assetQuantity: {
+    fontSize: 10,
+  },
+  assetFooterHorizontal: {
+    alignItems: 'center',
+  },
+  assetTotal: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Estilos para as faixas de ativos
+  assetStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#333',
   },
-  assetSymbol: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  assetStripInfo: {
+    flex: 1,
+  },
+  assetStripHeader: {
     marginBottom: 4,
   },
-  assetName: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  assetPrice: {
+  assetStripSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  assetStripName: {
+    fontSize: 12,
+  },
+  assetStripDetails: {
     marginBottom: 4,
   },
-  assetChange: {
+  assetStripPrice: {
     fontSize: 14,
     fontWeight: '600',
+    marginBottom: 2,
   },
+  assetStripQuantity: {
+    fontSize: 11,
+  },
+  assetStripActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Estilos para notícias
   newsCard: {
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#333',
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  newsAsset: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  newsDate: {
+    fontSize: 11,
   },
   newsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  newsSummary: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  newsSource: {
+    fontSize: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    marginBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  pickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerText: {
     fontSize: 16,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+  },
+  assetListContainer: {
+    maxHeight: 300,
+  },
+  assetOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  assetOptionSymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  assetOptionName: {
+    fontSize: 14,
+  },
+  // Estilos para modal de alertas
+  alertAssetInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 12,
+  },
+  alertAssetSymbol: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  alertAssetName: {
+    fontSize: 14,
+  },
+  alertTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  alertTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  alertTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Estilos para modal de notícias
+  newsListContainer: {
+    maxHeight: 400,
+  },
+  newsModalCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  newsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  newsModalDate: {
+    fontSize: 12,
+  },
+  newsModalSource: {
+    fontSize: 12,
+  },
+  newsModalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  newsModalSummary: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  // Estilos para o gráfico de análise
+  chartContainer: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  chartCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    width: screenWidth * 0.8,
+    marginRight: 16,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  chartAssetSelector: {
+    flex: 1,
+  },
+  chartLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  assetSelectorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  selectedAssetText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  chartPeriodSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  periodButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  periodButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'white',
+  },
+  chartArea: {
+    height: 120,
+    marginBottom: 20,
+    justifyContent: 'flex-end',
+  },
+  chartLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: '100%',
+  },
+  chartBar: {
+    width: 8,
+    borderRadius: 4,
+    minHeight: 4,
+  },
+  chartInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  chartPriceInfo: {
+    flex: 1,
+  },
+  currentPrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  priceChange: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  changeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chartIndicators: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  indicator: {
+    alignItems: 'center',
+  },
+  indicatorLabel: {
+    fontSize: 10,
+    marginBottom: 4,
+  },
+  trendIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  trendText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  trendIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  indicatorValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Estilos para os novos elementos
+  assetHeaderLeft: {
+    flex: 1,
+  },
+  deleteButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 71, 87, 0.1)',
+    borderRadius: 12,
+  },
+  addAssetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 16,
+    backgroundColor: 'transparent',
+  },
+  addAssetButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  // Estilos para o novo design de faixa
+  newAssetStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  assetLeftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  logoContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  redMarker: {
+    position: 'absolute',
+    left: -4,
+    top: 8,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 0,
+    borderBottomWidth: 8,
+    borderTopWidth: 8,
+    borderLeftColor: '#ff4757',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent',
+    zIndex: 1,
+  },
+  circularLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  logoTopHalf: {
+    width: '100%',
+    height: '50%',
+    backgroundColor: '#ffd700',
+  },
+  logoBottomHalf: {
+    width: '100%',
+    height: '50%',
+    backgroundColor: '#006400',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  newAssetInfo: {
+    flex: 1,
+  },
+  newAssetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  newAssetActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionIconButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assetRightSection: {
+    alignItems: 'flex-end',
+  },
+  currentPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  priceChange: {
+    alignItems: 'flex-end',
+  },
+  changeAmount: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  changePercentage: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  portfolioHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  bitcoinIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffd700',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bitcoinSymbol: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  // Estilos para seção de gráficos deslizáveis
+  chartsSectionContainer: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  chartTypeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  chartTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  chartTypeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chartsScrollContainer: {
+    paddingRight: 16,
+  },
+  chartAssetInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  assetLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  assetLogoText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  chartAssetSymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  chartAssetName: {
+    fontSize: 12,
+  },
+  // Estilos para gráficos de distribuição
+  chartLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  chartLegendColor: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  chartLegendText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  barChartContainer: {
+    width: '100%',
+  },
+  barChartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  barChartLabel: {
+    width: 80,
+    fontSize: 12,
+    marginRight: 12,
+  },
+  barChartBarContainer: {
+    flex: 1,
+    height: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 10,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  barChartBar: {
+    height: '100%',
+    borderRadius: 10,
+  },
+  barChartValue: {
+    width: 80,
+    fontSize: 12,
+    textAlign: 'right',
+  },
+  donutChartContainer: {
+    alignItems: 'center',
+  },
+  donutChartCenter: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  donutChartTotal: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  donutChartLabel: {
+    fontSize: 14,
+  },
+  // Estilos para o modal de portfolio completo
+  portfolioModalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  portfolioModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  portfolioModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  portfolioModalBody: {
+    paddingBottom: 20,
+  },
+  portfolioAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  portfolioAddButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  portfolioTotalSection: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  portfolioTotalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  portfolioTotalLabel: {
+    fontSize: 14,
+  },
+  portfolioCurrencyToggle: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  portfolioCurrencyToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  portfolioTotalAmount: {
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  newsSummary: {
+  portfolioProfitIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  portfolioProfitText: {
     fontSize: 14,
-    lineHeight: 20,
+    fontWeight: '600',
+  },
+  portfolioChartSection: {
+    marginBottom: 20,
+  },
+  portfolioChartTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  portfolioChartTypeSelector: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  portfolioChartTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  portfolioChartTypeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  portfolioHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  portfolioViewSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 24,
+  },
+  portfolioViewButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(156, 163, 175, 0.3)',
+  },
+  portfolioViewButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  portfolioChartContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  portfolioAssetsSection: {
+    marginTop: 16,
+  },
+  portfolioAssetsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  portfolioAssetItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  portfolioAssetLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  portfolioAssetLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  portfolioAssetLogoText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  portfolioAssetSymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  portfolioAssetName: {
+    fontSize: 14,
+  },
+  portfolioAssetCategory: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  portfolioAssetRight: {
+    alignItems: 'flex-end',
+  },
+  portfolioAssetValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  portfolioAssetPercentage: {
+    fontSize: 12,
+  },
+  finalSpacing: {
+    height: 100, 
   },
 });
