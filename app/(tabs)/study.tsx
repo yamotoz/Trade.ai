@@ -20,6 +20,7 @@ export default function StudyScreen() {
 
   const levels = [
     { id: 'all', label: 'Todos', icon: 'school' },
+    { id: 'introduction', label: 'Introdução', icon: 'book' },
     { id: 'beginner', label: 'Básico', icon: 'star' },
     { id: 'intermediate', label: 'Intermediário', icon: 'star-half' },
     { id: 'advanced', label: 'Avançado', icon: 'star-outline' },
@@ -64,6 +65,7 @@ export default function StudyScreen() {
 
   const getLevelColor = (level: string) => {
     switch (level) {
+      case 'introduction': return colors.accent.blue;
       case 'beginner': return colors.accent.green;
       case 'intermediate': return colors.accent.yellow;
       case 'advanced': return colors.accent.red;
@@ -73,6 +75,7 @@ export default function StudyScreen() {
 
   const getLevelLabel = (level: string) => {
     switch (level) {
+      case 'introduction': return 'Introdução';
       case 'beginner': return 'Básico';
       case 'intermediate': return 'Intermediário';
       case 'advanced': return 'Avançado';
