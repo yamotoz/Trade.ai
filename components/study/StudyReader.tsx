@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface StudyReaderProps {
   study: any;
@@ -12,6 +13,11 @@ export function StudyReader({ study, visible, onClose }: StudyReaderProps) {
   
   return (
     <View style={styles.container}>
+      {/* Botão Fechar */}
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Ionicons name="close" size={28} color="#fff" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>{study?.title || 'Título do Estudo'}</Text>
       <Text style={styles.content}>
         {study?.content || 'Conteúdo completo do estudo aqui...'}
@@ -27,11 +33,19 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
   },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    padding: 8,
+    borderRadius: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 20,
+    marginTop: 20,
   },
   content: {
     fontSize: 16,
