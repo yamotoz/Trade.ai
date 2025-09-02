@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Alert, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
@@ -46,7 +46,7 @@ export default function HomeScreen() {
   const [selectedAssetForAlert, setSelectedAssetForAlert] = useState<Asset | null>(null);
   const [selectedAssetForNews, setSelectedAssetForNews] = useState<Asset | null>(null);
   const [isDollarMode, setIsDollarMode] = useState(false);
-  const [selectedChartType, setSelectedChartType] = useState<'pie' | 'bar' | 'donut'>('pie');
+  const [selectedChartType, setSelectedChartType] = useState<'chart' | 'categories' | 'donut'>('categories');
   const [assets, setAssets] = useState<Asset[]>([
     // Bitcoin como ativo padrão de início
     {
@@ -291,35 +291,55 @@ export default function HomeScreen() {
     );
   };
 
-  // Renderizar gráfico de barras
+  // Renderizar gráfico de barras elegante
   const renderBarChart = () => {
     const distribution = getCategoryDistribution();
     const categories = Object.keys(distribution);
     const maxValue = Math.max(...categories.map(cat => distribution[cat].value));
     
+    // Cores elegantes para cada categoria
+    const categoryColors = {
+      'Crypto': '#FFD700',      // Amarelo dourado para crypto
+      'Stocks': '#4CAF50',      // Verde para ações
+      'Real Estate': '#9C27B0', // Roxo para imóveis
+      'Bonds': '#2196F3',       // Azul para títulos
+      'Commodities': '#FF9800', // Laranja para commodities
+      'Cash': '#607D8B',        // Cinza para dinheiro
+      'Other': '#F44336'        // Vermelho para outros
+    };
+    
     return (
-      <View style={styles.barChartContainer}>
-        {categories.map((category) => (
-          <View key={category} style={styles.barChartItem}>
-            <Text style={[styles.barChartLabel, { color: colors.text.tertiary }]}>
-              {category}
-            </Text>
-            <View style={styles.barChartBarContainer}>
-              <View 
-                style={[
-                  styles.barChartBar, 
-                  { 
-                    backgroundColor: distribution[category].color,
-                    width: `${(distribution[category].value / maxValue) * 100}%`
-                  }
-                ]} 
-              />
+      <View style={styles.elegantBarChartContainer}>
+        {categories.map((category) => {
+          const percentage = (distribution[category].value / maxValue) * 100;
+          const categoryColor = categoryColors[category as keyof typeof categoryColors] || distribution[category].color;
+          
+          return (
+            <View key={category} style={styles.elegantBarChartItem}>
+              <View style={styles.elegantBarChartLeft}>
+                <Text style={[styles.elegantBarChartLabel, { color: colors.text.primary }]}>
+                  {category}
+                </Text>
+                <Text style={[styles.elegantBarChartPercentage, { color: colors.text.secondary }]}>
+                  {distribution[category].percentage.toFixed(1)}%
+                </Text>
+              </View>
+              <View style={styles.elegantBarChartRight}>
+                <View style={styles.elegantBarChartBarContainer}>
+                  <View 
+                    style={[
+                      styles.elegantBarChartBar, 
+                      { 
+                        backgroundColor: categoryColor,
+                        width: `${percentage}%`
+                      }
+                    ]} 
+                  />
+                </View>
+              </View>
             </View>
-            <Text style={[styles.barChartValue, { color: colors.text.primary }]}>
-              {formatCurrency(distribution[category].value)}
-            </Text>
-          </View>
-        ))}
+          );
+        })}
       </View>
     );
   };
@@ -372,25 +392,22 @@ export default function HomeScreen() {
         </View>
 
         {/* Carteira Principal - Faixa Horizontal */}
-        <TouchableOpacity 
-          style={styles.portfolioContainer}
-          onPress={() => setShowPortfolioModal(true)}
-          activeOpacity={0.7}
-        >
+        <View style={styles.portfolioContainer}>
           <View style={[styles.portfolioCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
             <View style={styles.portfolioContent}>
               <View style={styles.portfolioInfo}>
-                <View style={styles.portfolioIconContainer}>
+                <TouchableOpacity 
+                  style={styles.portfolioIconContainer}
+                  onPress={() => setShowPortfolioModal(true)}
+                  activeOpacity={0.7}
+                >
                   <Ionicons name="wallet" size={24} color={colors.text.primary} />
-                </View>
+                </TouchableOpacity>
                                  <View>
                    <Text style={[styles.portfolioLabel, { color: colors.text.tertiary }]}>
                      Carteira
                    </Text>
                    <View style={styles.portfolioAmountContainer}>
-                     <Text style={[styles.portfolioAmount, { color: colors.text.primary }]}>
-                       {formatCurrency(calculateTotalPortfolio())}
-                     </Text>
                      <TouchableOpacity 
                        style={styles.currencyToggle}
                        onPress={toggleCurrencyMode}
@@ -399,6 +416,9 @@ export default function HomeScreen() {
                          {isDollarMode ? 'R$' : '$'}
                        </Text>
                      </TouchableOpacity>
+                     <Text style={[styles.portfolioAmount, { color: colors.text.primary }]}>
+                       {formatCurrency(calculateTotalPortfolio())}
+                     </Text>
                    </View>
                  </View>
               </View>
@@ -425,7 +445,7 @@ export default function HomeScreen() {
               />
             </View>
           </View>
-        </TouchableOpacity>
+        </View>
 
         {/* Seção de Gráficos Deslizáveis */}
         <View style={styles.chartsSectionContainer}>
@@ -1009,6 +1029,9 @@ export default function HomeScreen() {
         onRequestClose={() => setShowPortfolioModal(false)}
       >
         <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowPortfolioModal(false)}>
+            <View style={styles.modalOverlayBackground} />
+          </TouchableWithoutFeedback>
           <View style={[styles.portfolioModalContent, { backgroundColor: colors.surface.primary }]}>
             {/* Header do Portfolio */}
             <View style={styles.portfolioModalHeader}>
@@ -1022,8 +1045,7 @@ export default function HomeScreen() {
                   setShowAddModal(true);
                 }}
               >
-                <Ionicons name="add" size={20} color="white" />
-                <Text style={styles.portfolioAddButtonText}>Add</Text>
+                <Ionicons name="add" size={16} color="white" />
               </TouchableOpacity>
             </View>
 
@@ -1051,9 +1073,14 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 
-                <Text style={[styles.portfolioTotalAmount, { color: colors.text.primary }]}>
-                  {formatCurrency(calculateTotalPortfolio())}
-                </Text>
+                <View style={styles.portfolioTotalAmountContainer}>
+                  <Text style={[styles.portfolioCurrencySymbol, { color: colors.text.primary }]}>
+                    {isDollarMode ? 'R$' : '$'}
+                  </Text>
+                  <Text style={[styles.portfolioTotalAmount, { color: colors.text.primary }]}>
+                    {formatCurrency(calculateTotalPortfolio()).replace(/[R$]/g, '').trim()}
+                  </Text>
+                </View>
               </View>
 
               {/* Seletor de Tipo de Visualização */}
@@ -1061,13 +1088,13 @@ export default function HomeScreen() {
                 <TouchableOpacity 
                   style={[
                     styles.portfolioViewButton, 
-                    { backgroundColor: selectedChartType === 'bar' ? colors.primary[500] : 'transparent' }
+                    { backgroundColor: selectedChartType === 'chart' ? colors.primary[500] : 'transparent' }
                   ]}
-                  onPress={() => setSelectedChartType('bar')}
+                  onPress={() => setSelectedChartType('chart')}
                 >
                   <Text style={[
                     styles.portfolioViewButtonText, 
-                    { color: selectedChartType === 'bar' ? 'white' : colors.text.primary }
+                    { color: selectedChartType === 'chart' ? 'white' : colors.text.primary }
                   ]}>
                     Chart
                   </Text>
@@ -1076,13 +1103,13 @@ export default function HomeScreen() {
                 <TouchableOpacity 
                   style={[
                     styles.portfolioViewButton, 
-                    { backgroundColor: selectedChartType === 'pie' ? colors.primary[500] : 'transparent' }
+                    { backgroundColor: selectedChartType === 'categories' ? colors.primary[500] : 'transparent' }
                   ]}
-                  onPress={() => setSelectedChartType('pie')}
+                  onPress={() => setSelectedChartType('categories')}
                 >
                   <Text style={[
                     styles.portfolioViewButtonText, 
-                    { color: selectedChartType === 'pie' ? 'white' : colors.text.primary }
+                    { color: selectedChartType === 'categories' ? 'white' : colors.text.primary }
                   ]}>
                     Categories
                   </Text>
@@ -1107,8 +1134,8 @@ export default function HomeScreen() {
               {/* Gráfico de Distribuição */}
               <View style={styles.portfolioChartSection}>
                 <View style={styles.portfolioChartContainer}>
-                  {selectedChartType === 'pie' && renderPieChart()}
-                  {selectedChartType === 'bar' && renderBarChart()}
+                  {selectedChartType === 'chart' && renderPieChart()}
+                  {selectedChartType === 'categories' && renderBarChart()}
                   {selectedChartType === 'donut' && renderDonutChart()}
                 </View>
               </View>
@@ -1231,7 +1258,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   currencyToggle: {
-    marginLeft: 3,
+    marginRight: 3,
     paddingHorizontal: 1,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1412,6 +1439,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  modalOverlayBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContent: {
     borderTopLeftRadius: 20,
@@ -1774,14 +1808,6 @@ const styles = StyleSheet.create({
   assetRightSection: {
     alignItems: 'flex-end',
   },
-  currentPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  priceChange: {
-    alignItems: 'flex-end',
-  },
   changeAmount: {
     fontSize: 12,
     fontWeight: '600',
@@ -1876,35 +1902,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  barChartContainer: {
+  // Estilos elegantes para o gráfico de barras
+  elegantBarChartContainer: {
     width: '100%',
+    paddingVertical: 8,
   },
-  barChartItem: {
+  elegantBarChartItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingHorizontal: 4,
   },
-  barChartLabel: {
-    width: 80,
+  elegantBarChartLeft: {
+    width: 100,
+    marginRight: 16,
+  },
+  elegantBarChartLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  elegantBarChartPercentage: {
     fontSize: 12,
-    marginRight: 12,
+    fontWeight: '500',
   },
-  barChartBarContainer: {
+  elegantBarChartRight: {
     flex: 1,
-    height: 20,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 10,
-    marginRight: 12,
+    alignItems: 'flex-end',
+  },
+  elegantBarChartBarContainer: {
+    width: '100%',
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
   },
-  barChartBar: {
+  elegantBarChartBar: {
     height: '100%',
-    borderRadius: 10,
-  },
-  barChartValue: {
-    width: 80,
-    fontSize: 12,
-    textAlign: 'right',
+    borderRadius: 12,
+    minWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   donutChartContainer: {
     alignItems: 'center',
@@ -1942,19 +1984,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   portfolioAddButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  portfolioAddButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   portfolioTotalSection: {
     backgroundColor: 'rgba(0,0,0,0.05)',
@@ -1979,6 +2013,15 @@ const styles = StyleSheet.create({
   portfolioCurrencyToggleText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  portfolioTotalAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  portfolioCurrencySymbol: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginRight: 4,
   },
   portfolioTotalAmount: {
     fontSize: 24,

@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '@/lib/theme';
 import { Toaster } from '@/components/ui/Toaster';
 
+
 // Configuração do React Query
 const queryClient = new QueryClient({
   defaultOptions: {

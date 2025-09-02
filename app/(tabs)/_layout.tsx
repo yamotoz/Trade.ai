@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { useTheme } from '@/lib/theme';
+import { Text } from 'react-native';
 
 export default function TabLayout() {
   const { colors } = useTheme();
@@ -15,7 +16,9 @@ export default function TabLayout() {
           borderTopWidth: 0,
           height: 110, // Aumentado para 100 para dar ainda mais espaço
           paddingBottom: 45, // Aumentado para 30 para melhor posicionamento
-          paddingTop: 15, // Aumentado para 15 para melhor distribuição
+          paddingTop: 15
+          
+          , // Aumentado para 15 para melhor distribuição
         },
         tabBarActiveTintColor: colors.primary[500],
         tabBarInactiveTintColor: colors.text.tertiary,
@@ -54,28 +57,26 @@ export default function TabLayout() {
           tabBarButton: (props) => (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <View style={{ 
-                width: 64, 
-                height: 64, 
-                backgroundColor: colors.primary[500], 
-                borderRadius: 32, 
-                alignItems: 'center', 
+                width: 56,
+                height: 56,
+                backgroundColor: 'transparent',
+                borderRadius: 28,
+                alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5
+                borderWidth: 1,
+                borderColor: colors.primary[500],
               }}>
                 <Ionicons 
-                  name="swap-horizontal" 
-                  size={28} 
-                  color="white" 
+                  name="swap-horizontal"
+                  size={24}
+                  color={colors.primary[500]}
                 />
               </View>
             </View>
           ),
         }}
       />
+
       <Tabs.Screen
         name="news"
         options={{

@@ -69,7 +69,7 @@ export default function AssetsScreen() {
             >
               <View style={styles.typeButtonContent}>
                 <Ionicons 
-                  name={type.icon} 
+                  name={type.icon as any} 
                   size={16} 
                   color={selectedType === type.id ? 'white' : colors.text.primary} 
                 />
@@ -149,6 +149,8 @@ export default function AssetsScreen() {
           )}
         </View>
       </ScrollView>
+
+
     </SafeAreaView>
   );
 }
@@ -175,7 +177,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   typeButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 24,
   },
   sectionTitle: {
