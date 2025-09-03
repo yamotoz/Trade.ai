@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { HighchartsChart } from '@/components/charts/HighchartsChart';
+import { PortfolioChart } from '@/components/charts/PortfolioChart';
+import { useMarketData } from '@/lib/hooks/useMarketData';
+import { formatPrice, formatPercentage, getChangeColor, getTrendColor, getTrendIcon, getTrendText } from '@/lib/mock-chart-data';
+import { POPULAR_SYMBOLS } from '@/lib/market/binance';
 
 interface Asset {
   id: string;
@@ -45,8 +50,17 @@ export default function HomeScreen() {
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
   const [selectedAssetForAlert, setSelectedAssetForAlert] = useState<Asset | null>(null);
   const [selectedAssetForNews, setSelectedAssetForNews] = useState<Asset | null>(null);
+  
+  // Dados de mercado em tempo real
+  const { prices, candles, loading: marketLoading, error: marketError, refresh: refreshMarket } = useMarketData({
+    symbols: POPULAR_SYMBOLS.slice(0, 3), // Reduzido para 3 símbolos para evitar rate limiting
+    interval: '1h',
+    enableRealtime: true
+  });
   const [isDollarMode, setIsDollarMode] = useState(false);
   const [selectedChartType, setSelectedChartType] = useState<'chart' | 'categories' | 'donut'>('categories');
+  const [displayedCharts, setDisplayedCharts] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'BNBUSDT']);
+  const [availableSymbols] = useState(POPULAR_SYMBOLS.slice(0, 9));
   const [assets, setAssets] = useState<Asset[]>([
     // Bitcoin como ativo padrão de início
     {
@@ -272,22 +286,35 @@ export default function HomeScreen() {
     setIsDollarMode(!isDollarMode);
   };
 
-  // Renderizar gráfico de pizza
-  const renderPieChart = () => {
-    const distribution = getCategoryDistribution();
-    const categories = Object.keys(distribution);
-    
+  // Função para trocar um gráfico por outro
+  const swapChart = (currentSymbol: string) => {
+    const availableOptions = availableSymbols.filter(symbol => !displayedCharts.includes(symbol));
+    if (availableOptions.length > 0) {
+      const randomSymbol = availableOptions[Math.floor(Math.random() * availableOptions.length)];
+      setDisplayedCharts(prev => 
+        prev.map(symbol => symbol === currentSymbol ? randomSymbol : symbol)
+      );
+    }
+  };
+
+  // Função para adicionar mais um gráfico
+  const addMoreChart = () => {
+    const availableOptions = availableSymbols.filter(symbol => !displayedCharts.includes(symbol));
+    if (availableOptions.length > 0 && displayedCharts.length < 5) {
+      const randomSymbol = availableOptions[Math.floor(Math.random() * availableOptions.length)];
+      setDisplayedCharts(prev => [...prev, randomSymbol]);
+    }
+  };
+
+  // Renderizar gráfico de linha (evolução do portfolio)
+  const renderLineChart = () => {
     return (
-      <View style={styles.chartContainer}>
-        {categories.map((category, index) => (
-          <View key={category} style={styles.chartLegendItem}>
-            <View style={[styles.chartLegendColor, { backgroundColor: distribution[category].color }]} />
-            <Text style={[styles.chartLegendText, { color: colors.text.primary }]}>
-              {category}: {distribution[category].percentage.toFixed(1)}%
-            </Text>
-          </View>
-        ))}
-      </View>
+      <PortfolioChart
+        type="line"
+        totalValue={calculateTotalPortfolio()}
+
+        height={200}
+      />
     );
   };
 
@@ -295,7 +322,6 @@ export default function HomeScreen() {
   const renderBarChart = () => {
     const distribution = getCategoryDistribution();
     const categories = Object.keys(distribution);
-    const maxValue = Math.max(...categories.map(cat => distribution[cat].value));
     
     // Cores elegantes para cada categoria
     const categoryColors = {
@@ -308,39 +334,19 @@ export default function HomeScreen() {
       'Other': '#F44336'        // Vermelho para outros
     };
     
+    const categoryData = categories.map(category => ({
+      name: category,
+      value: distribution[category].value,
+      percentage: distribution[category].percentage,
+      color: categoryColors[category as keyof typeof categoryColors] || distribution[category].color
+    }));
+    
     return (
-      <View style={styles.elegantBarChartContainer}>
-        {categories.map((category) => {
-          const percentage = (distribution[category].value / maxValue) * 100;
-          const categoryColor = categoryColors[category as keyof typeof categoryColors] || distribution[category].color;
-          
-          return (
-            <View key={category} style={styles.elegantBarChartItem}>
-              <View style={styles.elegantBarChartLeft}>
-                <Text style={[styles.elegantBarChartLabel, { color: colors.text.primary }]}>
-                  {category}
-                </Text>
-                <Text style={[styles.elegantBarChartPercentage, { color: colors.text.secondary }]}>
-                  {distribution[category].percentage.toFixed(1)}%
-                </Text>
-              </View>
-              <View style={styles.elegantBarChartRight}>
-                <View style={styles.elegantBarChartBarContainer}>
-                  <View 
-                    style={[
-                      styles.elegantBarChartBar, 
-                      { 
-                        backgroundColor: categoryColor,
-                        width: `${percentage}%`
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            </View>
-          );
-        })}
-      </View>
+      <PortfolioChart
+        type="bar"
+        categoryData={categoryData}
+        height={200}
+      />
     );
   };
 
@@ -349,25 +355,31 @@ export default function HomeScreen() {
     const distribution = getCategoryDistribution();
     const categories = Object.keys(distribution);
     
+    // Cores elegantes para cada categoria
+    const categoryColors = {
+      'Crypto': '#FFD700',      // Amarelo dourado para crypto
+      'Stocks': '#4CAF50',      // Verde para ações
+      'Real Estate': '#9C27B0', // Roxo para imóveis
+      'Bonds': '#2196F3',       // Azul para títulos
+      'Commodities': '#FF9800', // Laranja para commodities
+      'Cash': '#607D8B',        // Cinza para dinheiro
+      'Other': '#F44336'        // Vermelho para outros
+    };
+    
+    const categoryData = categories.map(category => ({
+      name: category,
+      value: distribution[category].value,
+      percentage: distribution[category].percentage,
+      color: categoryColors[category as keyof typeof categoryColors] || distribution[category].color
+    }));
+    
     return (
-      <View style={styles.donutChartContainer}>
-        <View style={styles.donutChartCenter}>
-          <Text style={[styles.donutChartTotal, { color: colors.text.primary }]}>
-            {formatCurrency(calculateTotalPortfolio())}
-          </Text>
-          <Text style={[styles.donutChartLabel, { color: colors.text.tertiary }]}>
-            Total
-          </Text>
-        </View>
-        {categories.map((category, index) => (
-          <View key={category} style={styles.chartLegendItem}>
-            <View style={[styles.chartLegendColor, { backgroundColor: distribution[category].color }]} />
-            <Text style={[styles.chartLegendText, { color: colors.text.primary }]}>
-              {category}: {distribution[category].percentage.toFixed(1)}%
-            </Text>
-          </View>
-        ))}
-      </View>
+      <PortfolioChart
+        type="donut"
+        categoryData={categoryData}
+        totalValue={calculateTotalPortfolio()}
+        height={200}
+      />
     );
   };
 
@@ -447,9 +459,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Seção de Gráficos Deslizáveis */}
+        {/* Seção de Gráficos Highcharts */}
         <View style={styles.chartsSectionContainer}>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Gráficos em Tempo Real
+          </Text>
           
           {/* Container de Gráficos Deslizáveis */}
           <ScrollView 
@@ -460,164 +474,100 @@ export default function HomeScreen() {
             snapToInterval={screenWidth - 32}
             decelerationRate="fast"
           >
-            {/* Gráfico 1 - Bitcoin */}
-            <View style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-              <View style={styles.chartHeader}>
-                <View style={styles.chartAssetInfo}>
-                  <View style={[styles.assetLogo, { backgroundColor: '#FFD700' }]}>
-                    <Text style={styles.assetLogoText}>₿</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>BTC</Text>
-                    <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>Bitcoin</Text>
-                  </View>
-                </View>
-              </View>
+            {displayedCharts.map((symbol, index) => {
+              const priceData = prices?.get(symbol);
+              const candleData = candles?.get(symbol);
               
-              <View style={styles.chartArea}>
-                <View style={styles.chartLine}>
-                  {[30, 45, 35, 55, 40, 65, 50, 75, 60, 85, 70, 95].map((height, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.chartBar,
-                        {
-                          height: height,
-                          backgroundColor: index === 11 ? '#FFD700' : colors.surface.secondary,
-                          marginRight: index === 11 ? 0 : 2,
-                        }
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-              
-              <View style={styles.chartInfo}>
-                <View style={styles.chartPriceInfo}>
-                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
-                    {formatCurrency(assets.find(a => a.symbol === 'BTC')?.price || 0)}
-                  </Text>
-                </View>
-                
-                <View style={styles.chartIndicators}>
-                  <View style={styles.indicator}>
-                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
-                    <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
+              if (!priceData || !candleData) return null;
+
+              const assetLogos: { [key: string]: { text: string; color: string } } = {
+                'BTCUSDT': { text: '₿', color: '#f7931a' },
+                'ETHUSDT': { text: 'Ξ', color: '#627eea' },
+                'BNBUSDT': { text: 'B', color: '#f3ba2f' },
+                'ADAUSDT': { text: 'A', color: '#0033ad' },
+                'DOTUSDT': { text: 'D', color: '#e6007a' },
+                'LINKUSDT': { text: 'L', color: '#2a5ada' },
+                'LTCUSDT': { text: 'Ł', color: '#bfbbbb' },
+                'BCHUSDT': { text: 'B', color: '#0ac18e' },
+                'XLMUSDT': { text: 'X', color: '#7b00ff' }
+              };
+
+              const logo = assetLogos[symbol] || { text: symbol[0], color: '#607D8B' };
+
+              return (
+                <View key={`${symbol}-${index}`} style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+                  <View style={styles.chartHeader}>
+                    <View style={styles.chartAssetInfo}>
+                      <View style={[styles.assetLogo, { backgroundColor: logo.color }]}>
+                        <Text style={styles.assetLogoText}>{logo.text}</Text>
+                      </View>
+                      <View>
+                        <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>{symbol.replace('USDT', '')}</Text>
+                        <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>{symbol}</Text>
+                      </View>
+                    </View>
+                    
+                    {/* Ícone de Troca */}
+                    <TouchableOpacity 
+                      style={styles.swapButton}
+                      onPress={() => swapChart(symbol)}
+                    >
+                      <Ionicons name="swap-horizontal" size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
                   </View>
                   
-                  <View style={styles.indicator}>
-                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
-                    <Text style={[styles.indicatorValue, { color: '#2ed573' }]}>+8,2%</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-            
-            {/* Gráfico 2 - Petrobras */}
-            <View style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-              <View style={styles.chartHeader}>
-                <View style={styles.chartAssetInfo}>
-                  <View style={[styles.assetLogo, { backgroundColor: '#4CAF50' }]}>
-                    <Text style={styles.assetLogoText}>P</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>PETR4</Text>
-                    <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>Petrobras PN</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.chartArea}>
-                <View style={styles.chartLine}>
-                  {[25, 40, 30, 50, 35, 60, 45, 70, 55, 80, 65, 90].map((height, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.chartBar,
-                        {
-                          height: height,
-                          backgroundColor: index === 11 ? '#4CAF50' : colors.surface.secondary,
-                          marginRight: index === 11 ? 0 : 2,
-                        }
-                      ]}
+                                      <HighchartsChart
+                      symbol={symbol}
+                      title={symbol.replace('USDT', '')}
+                      height={200}
+                      data={candleData}
+                      volumeData={candleData.map(c => ({ timestamp: c.timestamp, volume: c.volume }))}
+                      interval="1h"
                     />
-                  ))}
+                  
+                                    <View style={styles.chartInfo}>
+                    <View style={styles.chartPriceInfo}>
+                      <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
+                        ${priceData.price.toFixed(2)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.chartIndicators}>
+                      <View style={styles.indicator}>
+                        <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
+                        <View style={styles.trendContainer}>
+                          <Text style={styles.trendIcon}>{getTrendIcon(priceData.changePercent24h >= 0 ? 'up' : 'down')}</Text>
+                          <Text style={[styles.indicatorValue, { color: getTrendColor(priceData.changePercent24h >= 0 ? 'up' : 'down') }]}>
+                            {getTrendText(priceData.changePercent24h >= 0 ? 'up' : 'down')}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.indicator}>
+                        <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
+                        <Text style={[styles.indicatorValue, { color: getChangeColor(priceData.changePercent24h) }]}>
+                          {formatPercentage(priceData.changePercent24h)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
                 </View>
-              </View>
-              
-              <View style={styles.chartInfo}>
-                <View style={styles.chartPriceInfo}>
-                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
-                    {formatCurrency(assets.find(a => a.symbol === 'PETR4')?.price || 0)}
+              );
+            })}
+
+            {/* Botão para Adicionar Mais Gráficos */}
+            {displayedCharts.length < 5 && (
+              <TouchableOpacity 
+                style={[styles.addChartCard, { backgroundColor: colors.surface.secondary, borderColor: colors.surface.tertiary }]}
+                onPress={addMoreChart}
+              >
+                <View style={styles.addChartContent}>
+                  <Ionicons name="add-circle-outline" size={40} color={colors.text.secondary} />
+                  <Text style={[styles.addChartText, { color: colors.text.secondary }]}>
+                    Adicionar Gráfico
                   </Text>
                 </View>
-                
-                <View style={styles.chartIndicators}>
-                  <View style={styles.indicator}>
-                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
-                    <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
-                  </View>
-                  
-                  <View style={styles.indicator}>
-                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
-                    <Text style={[styles.indicatorValue, { color: '#2ed573' }]}>+12,5%</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-            
-            {/* Gráfico 3 - Vale */}
-            <View style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
-              <View style={styles.chartHeader}>
-                <View style={styles.chartAssetInfo}>
-                  <View style={[styles.assetLogo, { backgroundColor: '#2196F3' }]}>
-                    <Text style={styles.assetLogoText}>V</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>VALE3</Text>
-                    <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>Vale ON</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.chartArea}>
-                <View style={styles.chartLine}>
-                  {[35, 50, 40, 60, 45, 70, 55, 80, 65, 90, 75, 100].map((height, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.chartBar,
-                        {
-                          height: height,
-                          backgroundColor: index === 11 ? '#2196F3' : colors.surface.secondary,
-                          marginRight: index === 11 ? 0 : 2,
-                        }
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-              
-              <View style={styles.chartInfo}>
-                <View style={styles.chartPriceInfo}>
-                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
-                    {formatCurrency(assets.find(a => a.symbol === 'VALE3')?.price || 0)}
-                  </Text>
-                </View>
-                
-                <View style={styles.chartIndicators}>
-                  <View style={styles.indicator}>
-                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Tendência</Text>
-                    <Text style={[styles.trendText, { color: '#2ed573' }]}>Alta</Text>
-                  </View>
-                  
-                  <View style={styles.indicator}>
-                    <Text style={[styles.indicatorLabel, { color: colors.text.tertiary }]}>Valorização</Text>
-                    <Text style={[styles.indicatorValue, { color: '#2ed573' }]}>+15,3%</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
 
@@ -1134,7 +1084,7 @@ export default function HomeScreen() {
               {/* Gráfico de Distribuição */}
               <View style={styles.portfolioChartSection}>
                 <View style={styles.portfolioChartContainer}>
-                  {selectedChartType === 'chart' && renderPieChart()}
+                  {selectedChartType === 'chart' && renderLineChart()}
                   {selectedChartType === 'categories' && renderBarChart()}
                   {selectedChartType === 'donut' && renderDonutChart()}
                 </View>
@@ -1583,17 +1533,27 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   chartCard: {
-    padding: 20,
+    padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    width: screenWidth * 0.8,
+    width: screenWidth * 0.85,
     marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   chartHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
+  },
+  swapButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   chartAssetSelector: {
     flex: 1,
@@ -1652,6 +1612,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    marginTop: 12,
   },
   chartPriceInfo: {
     flex: 1,
@@ -1697,6 +1658,32 @@ const styles = StyleSheet.create({
   },
   indicatorValue: {
     fontSize: 12,
+    fontWeight: '600',
+  },
+  trendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendIcon: {
+    fontSize: 12,
+  },
+  addChartCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    width: screenWidth * 0.85,
+    marginRight: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 300,
+  },
+  addChartContent: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  addChartText: {
+    fontSize: 16,
     fontWeight: '600',
   },
   // Estilos para os novos elementos
@@ -2085,9 +2072,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   portfolioChartContainer: {
-    height: 200,
+    height: 220,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   portfolioAssetsSection: {
     marginTop: 16,
