@@ -141,13 +141,13 @@ export class BinanceWebSocketRobust {
 
   // Processar mensagens recebidas
   private handleMessage(message: BinanceWebSocketMessage): void {
-    // Responder a pings do servidor
+    // Responder a pings do servidor (conforme documentação)
     if (message.ping) {
       this.sendPong(message.ping);
       return;
     }
 
-    // Processar dados de stream
+    // Processar dados de stream combinado
     if (message.stream && message.data) {
       this.processStreamData(message.stream, message.data);
       return;
@@ -171,41 +171,52 @@ export class BinanceWebSocketRobust {
       this.handleTickerUpdate(data as BinanceTickerData);
     } else if (data.e === 'kline') {
       this.handleKlineUpdate(data as BinanceKlineData);
+    } else if (data.e === '24hrMiniTicker') {
+      // Processar mini ticker se necessário
+      console.log('📊 Mini ticker recebido:', data.s);
     }
   }
 
   // Processar atualização de ticker
   private handleTickerUpdate(data: BinanceTickerData): void {
-    const priceData: PriceData = {
-      symbol: data.s,
-      price: parseFloat(data.c),
-      change24h: parseFloat(data.p),
-      changePercent24h: parseFloat(data.P),
-      volume: parseFloat(data.v),
-      high24h: parseFloat(data.h),
-      low24h: parseFloat(data.l),
-      open24h: parseFloat(data.o),
-      timestamp: data.C
-    };
+    try {
+      const priceData: PriceData = {
+        symbol: data.s,
+        price: parseFloat(data.c),
+        change24h: parseFloat(data.p),
+        changePercent24h: parseFloat(data.P),
+        volume24h: parseFloat(data.v),
+        high24h: parseFloat(data.h),
+        low24h: parseFloat(data.l),
+        lastUpdate: data.E, // Event time
+        timestamp: data.C // Statistics close time
+      };
 
-    this.callbacks.onPriceUpdate?.(priceData);
+      this.callbacks.onPriceUpdate?.(priceData);
+    } catch (error) {
+      console.error('Error handling ticker update:', error);
+    }
   }
 
   // Processar atualização de kline
   private handleKlineUpdate(data: BinanceKlineData): void {
-    const kline = data.k;
-    const candleData: CandleData = {
-      timestamp: kline.t,
-      open: parseFloat(kline.o),
-      high: parseFloat(kline.h),
-      low: parseFloat(kline.l),
-      close: parseFloat(kline.c),
-      volume: parseFloat(kline.v),
-      interval: kline.i as KlineInterval,
-      isClosed: kline.x
-    };
+    try {
+      const kline = data.k;
+      const candleData: CandleData = {
+        timestamp: kline.t,
+        open: parseFloat(kline.o),
+        high: parseFloat(kline.h),
+        low: parseFloat(kline.l),
+        close: parseFloat(kline.c),
+        volume: parseFloat(kline.v),
+        interval: kline.i as KlineInterval,
+        isClosed: kline.x
+      };
 
-    this.callbacks.onCandleUpdate?.(candleData);
+      this.callbacks.onCandleUpdate?.(candleData);
+    } catch (error) {
+      console.error('Error handling kline update:', error);
+    }
   }
 
   // Enviar pong em resposta ao ping
@@ -215,20 +226,20 @@ export class BinanceWebSocketRobust {
     }
   }
 
-  // Iniciar ping para manter conexão viva
+  // Iniciar ping para manter conexão viva (conforme documentação)
   private startPing(): void {
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        // Enviar ping vazio
+        // Enviar ping vazio (conforme documentação)
         this.ws.send(JSON.stringify({ method: 'PING', id: Date.now() }));
         
-        // Configurar timeout para pong
+        // Configurar timeout para pong (1 minuto conforme documentação)
         this.pongTimeout = setTimeout(() => {
           console.log('⚠️ Timeout de pong, reconectando...');
           this.disconnect();
-        }, 10000); // 10 segundos para responder
+        }, 60000); // 60 segundos para responder (conforme documentação)
       }
-    }, 30000); // Ping a cada 30 segundos
+    }, 20000); // Ping a cada 20 segundos (conforme documentação)
   }
 
   // Parar ping

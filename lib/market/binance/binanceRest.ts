@@ -69,14 +69,16 @@ export async function getAllTickers(): Promise<BinanceTicker[]> {
 }
 
 // Converter dados da Binance para formato do app
-export function convertKlineToCandle(kline: BinanceKline): CandleData {
+export function convertKlineToCandle(kline: BinanceKline, interval?: KlineInterval): CandleData {
   return {
     timestamp: kline.openTime,
     open: parseFloat(kline.open),
     high: parseFloat(kline.high),
     low: parseFloat(kline.low),
     close: parseFloat(kline.close),
-    volume: parseFloat(kline.volume)
+    volume: parseFloat(kline.volume),
+    interval,
+    isClosed: true
   };
 }
 
@@ -90,7 +92,8 @@ export function convertTickerToPriceData(ticker: BinanceTicker): PriceData {
     volume24h: parseFloat(ticker.volume),
     high24h: parseFloat(ticker.highPrice),
     low24h: parseFloat(ticker.lowPrice),
-    lastUpdate: Date.now()
+    lastUpdate: Date.now(),
+    timestamp: ticker.closeTime
   };
 }
 
@@ -109,7 +112,7 @@ export async function getSymbolData(
     ]);
 
     const price = convertTickerToPriceData(ticker);
-    const candles = klines.map(convertKlineToCandle);
+    const candles = klines.map(kline => convertKlineToCandle(kline, interval));
 
     return { price, candles };
   } catch (error) {

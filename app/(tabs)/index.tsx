@@ -10,6 +10,7 @@ import { PortfolioChart } from '@/components/charts/PortfolioChart';
 import { useMarketData } from '@/lib/hooks/useMarketData';
 import { formatPrice, formatPercentage, getChangeColor, getTrendColor, getTrendIcon, getTrendText } from '@/lib/mock-chart-data';
 import { POPULAR_SYMBOLS } from '@/lib/market/binance';
+import { Optional, safeMapGet } from '@/lib/optional';
 
 interface Asset {
   id: string;
@@ -53,13 +54,21 @@ export default function HomeScreen() {
   
   // Dados de mercado em tempo real
   const { prices, candles, loading: marketLoading, error: marketError, refresh: refreshMarket } = useMarketData({
-    symbols: POPULAR_SYMBOLS.slice(0, 3), // Reduzido para 3 símbolos para evitar rate limiting
+    symbols: POPULAR_SYMBOLS.slice(0, 1), // Reduzido para 1 símbolo para evitar rate limiting
     interval: '1h',
-    enableRealtime: true
+    enableRealtime: false // Desabilitado temporariamente para evitar muitas requisições
+  });
+
+  // Debug: verificar estado dos dados
+  console.log('Market Data State:', {
+    prices: prices ? `Map(${prices.size})` : 'undefined',
+    candles: candles ? `Map(${candles.size})` : 'undefined',
+    loading: marketLoading,
+    error: marketError
   });
   const [isDollarMode, setIsDollarMode] = useState(false);
   const [selectedChartType, setSelectedChartType] = useState<'chart' | 'categories' | 'donut'>('categories');
-  const [displayedCharts, setDisplayedCharts] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'BNBUSDT']);
+  const [displayedCharts, setDisplayedCharts] = useState<string[]>(['BTCUSDT']);
   const [availableSymbols] = useState(POPULAR_SYMBOLS.slice(0, 9));
   const [assets, setAssets] = useState<Asset[]>([
     // Bitcoin como ativo padrão de início
@@ -461,9 +470,23 @@ export default function HomeScreen() {
 
         {/* Seção de Gráficos Highcharts */}
         <View style={styles.chartsSectionContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-            Gráficos em Tempo Real
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+              Gráficos de Mercado
+            </Text>
+            {marketLoading && (
+              <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+                Carregando...
+              </Text>
+            )}
+            {marketError && (
+              <TouchableOpacity onPress={refreshMarket} style={styles.refreshButton}>
+                <Text style={[styles.errorText, { color: '#ff4757' }]}>
+                  Erro: {marketError} - Toque para tentar novamente
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
           
           {/* Container de Gráficos Deslizáveis */}
           <ScrollView 
@@ -475,10 +498,46 @@ export default function HomeScreen() {
             decelerationRate="fast"
           >
             {displayedCharts.map((symbol, index) => {
-              const priceData = prices?.get(symbol);
-              const candleData = candles?.get(symbol);
+              // Usar Optional para acesso seguro aos dados
+              const priceDataOptional = safeMapGet(prices, symbol);
+              const candleDataOptional = safeMapGet(candles, symbol);
               
-              if (!priceData || !candleData) return null;
+              const priceData = priceDataOptional.orElse(null as any);
+              const candleData = candleDataOptional.orElse(null as any);
+              
+              // Debug: verificar se os dados estão disponíveis
+              console.log(`Chart ${symbol}:`, { 
+                priceData: !!priceData, 
+                candleData: !!candleData, 
+                pricesSize: prices?.size, 
+                candlesSize: candles?.size,
+                pricesType: typeof prices,
+                candlesType: typeof candles
+              });
+              
+              if (!priceData || !candleData) {
+                // Mostrar placeholder enquanto carrega
+                return (
+                  <View key={`${symbol}-${index}`} style={[styles.chartCard, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}>
+                    <View style={styles.chartHeader}>
+                      <View style={styles.chartAssetInfo}>
+                        <View style={[styles.assetLogo, { backgroundColor: '#f7931a' }]}>
+                          <Text style={styles.assetLogoText}>₿</Text>
+                        </View>
+                        <View>
+                          <Text style={[styles.chartAssetSymbol, { color: colors.text.primary }]}>{symbol.replace('USDT', '')}</Text>
+                          <Text style={[styles.chartAssetName, { color: colors.text.secondary }]}>{symbol}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.chartArea}>
+                      <Text style={[styles.chartAssetName, { color: colors.text.secondary, textAlign: 'center', marginTop: 50 }]}>
+                        Carregando dados...
+                      </Text>
+                    </View>
+                  </View>
+                );
+              }
 
               const assetLogos: { [key: string]: { text: string; color: string } } = {
                 'BTCUSDT': { text: '₿', color: '#f7931a' },
@@ -1246,6 +1305,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  errorText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  refreshButton: {
+    padding: 4,
   },
   emptyState: {
     padding: 40,

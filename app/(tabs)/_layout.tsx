@@ -46,32 +46,23 @@ export default function TabLayout() {
       <Tabs.Screen
         name="operation"
         options={{
-          title: 'Operação',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons 
-              name="swap-horizontal" 
-              size={size + 4} 
-              color={color} 
-            />
-          ),
-          tabBarButton: (props) => (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ 
-                width: 56,
-                height: 56,
-                backgroundColor: 'transparent',
-                borderRadius: 28,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: colors.primary[500],
-              }}>
-                <Ionicons 
-                  name="swap-horizontal"
-                  size={24}
-                  color={colors.primary[500]}
-                />
-              </View>
+          title: '',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={{ 
+              width: 56,
+              height: 56,
+              backgroundColor: focused ? colors.primary[500] : 'transparent',
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: focused ? colors.primary[500] : colors.primary[500],
+            }}>
+              <Ionicons 
+                name="swap-horizontal"
+                size={24}
+                color={focused ? '#ffffff' : colors.primary[500]}
+              />
             </View>
           ),
         }}
@@ -91,7 +82,7 @@ export default function TabLayout() {
         options={{
           title: 'Estudos',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="library" size={size} color={color} />
+            <Ionicons name="book" size={size} color={color} />
           ),
         }}
       />

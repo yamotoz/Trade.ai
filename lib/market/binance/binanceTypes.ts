@@ -159,6 +159,8 @@ export interface CandleData {
   low: number;
   close: number;
   volume: number;
+  interval?: KlineInterval;
+  isClosed?: boolean;
 }
 
 export interface PriceData {
@@ -170,6 +172,7 @@ export interface PriceData {
   high24h: number;
   low24h: number;
   lastUpdate: number;
+  timestamp?: number;
 }
 
 export interface MarketData {

@@ -1,5 +1,4 @@
-// Tela de Operação em Tela Cheia
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,67 +6,34 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
-  Alert,
   SafeAreaView,
   ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../lib/theme';
-import { useSymbolData } from '../../lib/hooks/useMarketData';
-import { TradingViewChart } from '../../components/charts/TradingViewChart';
-import { POPULAR_SYMBOLS } from '../../lib/market/binance';
+import { useTheme } from '@/lib/theme';
+import { useMarketData } from '@/lib/hooks/useMarketData';
+import { HighchartsChart } from '@/components/charts/HighchartsChart';
+import { POPULAR_SYMBOLS } from '@/lib/market/binance';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function OperationScreen() {
   const { colors } = useTheme();
   const [selectedSymbol, setSelectedSymbol] = useState<string>('BTCUSDT');
-  const [orderType, setOrderType] = useState<'buy' | 'sell' | null>(null);
-  const [quantity, setQuantity] = useState<string>('0');
-  const [price, setPrice] = useState<string>('0');
   
-  const { price: priceData, candles, loading, error, refresh } = useSymbolData(selectedSymbol, '1m');
-
-  // Atualizar preço quando os dados mudarem
+  const { prices, candles, loading, error, refresh } = useMarketData({
+    symbols: [selectedSymbol],
+    interval: '1h',
+    enableRealtime: false
+  });
+  
+  const priceData = prices.get(selectedSymbol);
+  const candleData = candles.get(selectedSymbol) || [];
+  
+  // Recarregar dados quando o símbolo mudar
   useEffect(() => {
-    if (priceData) {
-      setPrice(priceData.price.toFixed(2));
-    }
-  }, [priceData]);
-
-  const handleBuy = () => {
-    setOrderType('buy');
-    Alert.alert(
-      'Ordem de Compra',
-      `Comprar ${quantity} ${selectedSymbol.replace('USDT', '')} por $${price}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: () => executeOrder('buy') }
-      ]
-    );
-  };
-
-  const handleSell = () => {
-    setOrderType('sell');
-    Alert.alert(
-      'Ordem de Venda',
-      `Vender ${quantity} ${selectedSymbol.replace('USDT', '')} por $${price}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: () => executeOrder('sell') }
-      ]
-    );
-  };
-
-  const executeOrder = (type: 'buy' | 'sell') => {
-    // Aqui você implementaria a lógica real de execução da ordem
-    Alert.alert(
-      'Ordem Executada',
-      `Ordem de ${type === 'buy' ? 'compra' : 'venda'} executada com sucesso!`,
-      [{ text: 'OK' }]
-    );
-    setOrderType(null);
-  };
+    refresh();
+  }, [selectedSymbol]); // Removido refresh das dependências para evitar loop
 
   const formatPrice = (value: number) => {
     return value.toFixed(2).replace('.', ',');
@@ -170,33 +136,6 @@ export default function OperationScreen() {
               </View>
             </View>
           </View>
-          
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>
-                Volume 24h
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                {priceData.volume24h.toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>
-                Alta 24h
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                ${formatPrice(priceData.high24h)}
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>
-                Baixa 24h
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                ${formatPrice(priceData.low24h)}
-              </Text>
-            </View>
-          </View>
         </View>
       )}
 
@@ -220,51 +159,19 @@ export default function OperationScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TradingViewChart
+          <HighchartsChart
             symbol={selectedSymbol}
             height={screenHeight * 0.4}
-            data={candles}
-            interval="1m"
+            data={candleData}
+            interval="1h"
           />
         )}
-      </View>
-
-      {/* Formulário de Ordem */}
-      <View style={[styles.orderForm, { backgroundColor: colors.surface.primary }]}>
-        <Text style={[styles.formTitle, { color: colors.text.primary }]}>
-          Nova Ordem
-        </Text>
-        
-        <View style={styles.inputRow}>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>
-              Quantidade
-            </Text>
-            <View style={[styles.inputContainer, { borderColor: colors.surface.tertiary }]}>
-              <Text style={[styles.inputValue, { color: colors.text.primary }]}>
-                {quantity}
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>
-              Preço
-            </Text>
-            <View style={[styles.inputContainer, { borderColor: colors.surface.tertiary }]}>
-              <Text style={[styles.inputValue, { color: colors.text.primary }]}>
-                ${price}
-              </Text>
-            </View>
-          </View>
-        </View>
       </View>
 
       {/* Botões de Ação */}
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={[styles.actionButton, styles.buyButton]}
-          onPress={handleBuy}
           disabled={loading}
         >
           <Ionicons name="arrow-up" size={24} color="#ffffff" />
@@ -273,7 +180,6 @@ export default function OperationScreen() {
         
         <TouchableOpacity
           style={[styles.actionButton, styles.sellButton]}
-          onPress={handleSell}
           disabled={loading}
         >
           <Ionicons name="arrow-down" size={24} color="#ffffff" />
@@ -332,7 +238,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
   assetSymbol: {
     fontSize: 20,
@@ -359,22 +264,6 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   changeText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  statValue: {
     fontSize: 14,
     fontWeight: '600',
   },
@@ -406,38 +295,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   retryText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  orderForm: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  inputGroup: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  inputLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  inputContainer: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  inputValue: {
     fontSize: 16,
     fontWeight: '600',
   },
