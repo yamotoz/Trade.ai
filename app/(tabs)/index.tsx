@@ -52,9 +52,13 @@ export default function HomeScreen() {
   const [selectedAssetForAlert, setSelectedAssetForAlert] = useState<Asset | null>(null);
   const [selectedAssetForNews, setSelectedAssetForNews] = useState<Asset | null>(null);
   
+  // Estados para gráficos
+  const [displayedCharts, setDisplayedCharts] = useState<string[]>(['BTCUSDT']);
+  const [availableSymbols] = useState(POPULAR_SYMBOLS.slice(0, 9));
+  
   // Dados de mercado em tempo real
   const { prices, candles, loading: marketLoading, error: marketError, refresh: refreshMarket } = useMarketData({
-    symbols: POPULAR_SYMBOLS.slice(0, 1), // Reduzido para 1 símbolo para evitar rate limiting
+    symbols: displayedCharts, // Usar os símbolos dos gráficos exibidos
     interval: '1h',
     enableRealtime: false // Desabilitado temporariamente para evitar muitas requisições
   });
@@ -68,8 +72,6 @@ export default function HomeScreen() {
   });
   const [isDollarMode, setIsDollarMode] = useState(false);
   const [selectedChartType, setSelectedChartType] = useState<'chart' | 'categories' | 'donut'>('categories');
-  const [displayedCharts, setDisplayedCharts] = useState<string[]>(['BTCUSDT']);
-  const [availableSymbols] = useState(POPULAR_SYMBOLS.slice(0, 9));
   const [assets, setAssets] = useState<Asset[]>([
     // Bitcoin como ativo padrão de início
     {
@@ -277,9 +279,9 @@ export default function HomeScreen() {
   const formatCurrency = (value: number) => {
     if (isDollarMode) {
       const dollarValue = value / 5.67;
-      return dollarValue.toFixed(2).replace('.', ',');
+      return `${dollarValue.toFixed(2).replace('.', ',')}`;
     }
-    return value.toFixed(2).replace('.', ',');
+    return `${value.toFixed(2).replace('.', ',')}`;
   };
 
   const formatDate = (dateStr: string) => {
@@ -289,6 +291,26 @@ export default function HomeScreen() {
 
   const getAssetNews = (assetSymbol: string) => {
     return generateNewsForAsset(assetSymbol);
+  };
+
+  // Função para obter ícone do ativo baseado no símbolo
+  const getAssetIcon = (symbol: string) => {
+    const iconMap: { [key: string]: { icon: string; color: string; text: string } } = {
+      'BTC': { icon: '₿', color: '#f7931a', text: '₿' },
+      'PETR4': { icon: '🛢️', color: '#4CAF50', text: 'P' },
+      'VALE3': { icon: '⛏️', color: '#2196F3', text: 'V' },
+      'ITUB4': { icon: '🏦', color: '#FF9800', text: 'I' },
+      'BBDC4': { icon: '🏛️', color: '#9C27B0', text: 'B' },
+      'ABEV3': { icon: '🍺', color: '#795548', text: 'A' },
+      'WEGE3': { icon: '⚡', color: '#607D8B', text: 'W' },
+      'RENT3': { icon: '🚗', color: '#E91E63', text: 'R' },
+      'LREN3': { icon: '👕', color: '#00BCD4', text: 'L' },
+      'MGLU3': { icon: '🛍️', color: '#FF5722', text: 'M' },
+      'B3SA3': { icon: '📊', color: '#3F51B5', text: 'B3' },
+      'SUZB3': { icon: '🌲', color: '#4CAF50', text: 'S' }
+    };
+    
+    return iconMap[symbol] || { icon: '📈', color: '#607D8B', text: symbol[0] };
   };
 
   const toggleCurrencyMode = () => {
@@ -312,6 +334,11 @@ export default function HomeScreen() {
     if (availableOptions.length > 0 && displayedCharts.length < 5) {
       const randomSymbol = availableOptions[Math.floor(Math.random() * availableOptions.length)];
       setDisplayedCharts(prev => [...prev, randomSymbol]);
+      
+      // Forçar refresh dos dados de mercado para incluir o novo símbolo
+      setTimeout(() => {
+        refreshMarket();
+      }, 100);
     }
   };
 
@@ -452,7 +479,7 @@ export default function HomeScreen() {
                 <View style={styles.statItem}>
                   <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Lucro</Text>
                   <Text style={[styles.statValue, { color: '#2ed573' }]}>
-                    {formatCurrency(calculateTotalProfit())}
+                    +{calculateTotalProfitPercentage().toFixed(2).replace('.', ',')}%
                   </Text>
                 </View>
               </View>
@@ -471,9 +498,6 @@ export default function HomeScreen() {
         {/* Seção de Gráficos Highcharts */}
         <View style={styles.chartsSectionContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-              Gráficos de Mercado
-            </Text>
             {marketLoading && (
               <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
                 Carregando...
@@ -587,7 +611,7 @@ export default function HomeScreen() {
                                     <View style={styles.chartInfo}>
                     <View style={styles.chartPriceInfo}>
                       <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
-                        ${priceData.price.toFixed(2)}
+                        {formatPrice(priceData.price, '$')}
                       </Text>
                     </View>
 
@@ -636,7 +660,9 @@ export default function HomeScreen() {
             Meus Ativos
           </Text>
           
-          {assets.map((asset) => (
+          {assets.map((asset) => {
+            const assetIcon = getAssetIcon(asset.symbol);
+            return (
             <TouchableOpacity
               key={asset.id}
               style={[styles.newAssetStrip, { backgroundColor: colors.surface.primary, borderColor: colors.surface.secondary }]}
@@ -646,8 +672,8 @@ export default function HomeScreen() {
               {/* Lado Esquerdo - Logo e Informações */}
               <View style={styles.assetLeftSection}>
                 <View style={styles.logoContainer}>
-                  <View style={styles.bitcoinIcon}>
-                    <Text style={styles.bitcoinSymbol}>₿</Text>
+                  <View style={[styles.assetIconContainer, { backgroundColor: assetIcon.color }]}>
+                    <Text style={styles.assetIconText}>{assetIcon.text}</Text>
                   </View>
                 </View>
                 
@@ -683,11 +709,11 @@ export default function HomeScreen() {
                              {/* Lado Direito - Preço e Variação */}
                <View style={styles.assetRightSection}>
                  <Text style={[styles.currentPrice, { color: colors.text.primary }]}>
-                   {asset.price.toFixed(2).replace('.', ',')}
+                   {formatPrice(asset.price, 'R$')}
                  </Text>
                 <View style={styles.priceChange}>
                   <Text style={[styles.changeAmount, { color: '#2ed573' }]}>
-                    +{(asset.price * 0.01).toFixed(2).replace('.', ',')}
+                    +{formatPrice(asset.price * 0.01, 'R$')}
                   </Text>
                   <Text style={[styles.changePercentage, { color: '#2ed573' }]}>
                     +1,44%
@@ -695,7 +721,8 @@ export default function HomeScreen() {
                 </View>
               </View>
             </TouchableOpacity>
-          ))}
+            );
+          })}
           
           {/* Botão Transparente para Adicionar Ativos */}
           <TouchableOpacity
@@ -1223,17 +1250,17 @@ const styles = StyleSheet.create({
   },
   portfolioContainer: {
     marginHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 16, // Reduzido de 24 para 16
   },
   portfolioCard: {
-    padding: 18, // Aumentado de 16 para 18 para melhor espaçamento interno
-    borderRadius: 16,
+    padding: 14, // Reduzido de 18 para 14
+    borderRadius: 12, // Reduzido de 16 para 12
     borderWidth: 1,
-    shadowColor: '#000', // Adicionado sombra sutil
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   portfolioContent: {
     flexDirection: 'row',
@@ -1259,7 +1286,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   portfolioAmount: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   portfolioAmountContainer: {
@@ -1299,7 +1326,7 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -1899,10 +1926,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
   },
+  assetIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  assetIconText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
   // Estilos para seção de gráficos deslizáveis
   chartsSectionContainer: {
     marginHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   chartTypeSelector: {
     flexDirection: 'row',

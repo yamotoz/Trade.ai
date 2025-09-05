@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { formatPrice } from '@/lib/mock-chart-data';
 
 interface AssetCardProps {
   asset: any;
@@ -43,12 +44,12 @@ export function AssetCard({
       </View>
       
       <View style={styles.priceContainer}>
-        <Text style={styles.price}>${asset?.price || '45,000.00'}</Text>
+        <Text style={styles.price}>{formatPrice(asset?.price || 45000, '$')}</Text>
         <Text style={[
           styles.change, 
           { color: (asset?.changePercent || 0) >= 0 ? '#2ed573' : '#ff4757' }
         ]}>
-          {(asset?.changePercent || 2.5) >= 0 ? '+' : ''}{(asset?.changePercent || 2.5).toFixed(2)}%
+          {(asset?.changePercent || 2.5) >= 0 ? '+' : ''}{(asset?.changePercent || 2.5).toFixed(2).replace('.', ',')}%
         </Text>
       </View>
       

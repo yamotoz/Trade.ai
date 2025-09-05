@@ -170,9 +170,19 @@ export function simulateRealTimeUpdate(symbol: string): CandleData | null {
   return updatedCandle;
 }
 
-// Função para formatar preço para exibição
+// Função para formatar preço para exibição (sempre 4 dígitos)
 export function formatPrice(price: number, currency: string = 'R$'): string {
-  return `${currency} ${price.toFixed(2).replace('.', ',')}`;
+  // Garantir que sempre tenha 4 dígitos (ex: 43,34 ou 1.234,56)
+  const formatted = price.toFixed(2).replace('.', ',');
+  const parts = formatted.split(',');
+  
+  if (parts[0].length < 4) {
+    // Adicionar zeros à esquerda se necessário
+    const paddedInteger = parts[0].padStart(4, '0');
+    return `${currency} ${paddedInteger},${parts[1]}`;
+  }
+  
+  return `${currency} ${formatted}`;
 }
 
 // Função para formatar percentual

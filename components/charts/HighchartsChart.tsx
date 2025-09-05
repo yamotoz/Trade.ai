@@ -225,11 +225,38 @@ export function HighchartsChart({
                 const chartData = candleData || mockData.data;
                 const chartVolume = volumeData || mockData.volume;
                 
-                Highcharts.stockChart('container', {
+                // Animar entrada dos dados progressivamente
+                const animateDataEntry = (data, delay = 50) => {
+                    const animatedData = [];
+                    let index = 0;
+                    
+                    const addDataPoint = () => {
+                        if (index < data.length) {
+                            animatedData.push(data[index]);
+                            index++;
+                            
+                            // Atualizar gráfico com dados parciais
+                            if (window.chart && window.chart.series[0]) {
+                                window.chart.series[0].setData(animatedData, true, true);
+                            }
+                            
+                            setTimeout(addDataPoint, delay);
+                        }
+                    };
+                    
+                    addDataPoint();
+                    return animatedData;
+                };
+                
+                window.chart = Highcharts.stockChart('container', {
                     chart: {
                         backgroundColor: 'transparent',
                         style: {
                             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutCubic'
                         }
                     },
                     
@@ -325,11 +352,19 @@ export function HighchartsChart({
                             upLineColor: '#2ed573',
                             dataLabels: {
                                 enabled: false
+                            },
+                            animation: {
+                                duration: 800,
+                                easing: 'easeInOutCubic'
                             }
                         },
                         column: {
                             color: '#4a9eff',
-                            borderColor: 'transparent'
+                            borderColor: 'transparent',
+                            animation: {
+                                duration: 600,
+                                easing: 'easeInOutCubic'
+                            }
                         }
                     },
                     
@@ -387,6 +422,11 @@ export function HighchartsChart({
                         enabled: false
                     }
                 });
+                
+                // Iniciar animação progressiva dos dados
+                setTimeout(() => {
+                    animateDataEntry(chartData, 30);
+                }, 500);
             }
 
             // Função para receber dados do React Native
