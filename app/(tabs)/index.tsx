@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { HighchartsChart } from '@/components/charts/HighchartsChart';
 import { PortfolioChart } from '@/components/charts/PortfolioChart';
 import { useMarketData } from '@/lib/hooks/useMarketData';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { formatPrice, formatPercentage, getChangeColor, getTrendColor, getTrendIcon, getTrendText } from '@/lib/mock-chart-data';
 import { POPULAR_SYMBOLS } from '@/lib/market/binance';
 import { Optional, safeMapGet } from '@/lib/optional';
@@ -44,6 +45,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const { logout } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAssetPicker, setShowAssetPicker] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -432,11 +434,28 @@ export default function HomeScreen() {
           <Text style={[styles.welcomeText, { color: colors.text.primary }]}>
             {greeting()}, Trader!
           </Text>
-          <TouchableOpacity
-            style={[styles.profileButton, { backgroundColor: colors.surface.secondary }]}
-          >
-            <Ionicons name="person" size={20} color={colors.text.primary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.profileButton, { backgroundColor: colors.surface.secondary }]}
+            >
+              <Ionicons name="person" size={20} color={colors.text.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.logoutButton, { backgroundColor: colors.surface.secondary }]}
+              onPress={() => {
+                Alert.alert(
+                  'Sair',
+                  'Tem certeza que deseja sair do aplicativo?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Sair', style: 'destructive', onPress: logout }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="log-out" size={20} color={colors.text.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Carteira Principal - Faixa Horizontal */}
@@ -1236,12 +1255,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   welcomeText: {
     fontSize: 18,
     fontWeight: '600',
     marginTop: 4, // Adicionado margem superior para melhor posicionamento
   },
   profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
