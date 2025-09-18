@@ -14,7 +14,7 @@ Aplicativo mobile para iniciantes e intermediários em trading, com simulação 
 
 ## 🛠️ Stack Tecnológica
 
-- **Frontend**: React Native + Expo SDK 50
+- **Frontend**: React Native + Expo SDK 54
 - **Navegação**: Expo Router (tabs + stacks)
 - **UI**: NativeWind (Tailwind CSS para RN)
 - **Estado**: Zustand + TanStack React Query
