@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { useTheme } from '@/lib/theme';
+import { Text } from 'react-native';
 
 export default function TabLayout() {
   const { colors } = useTheme();
@@ -10,12 +11,14 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: colors.surface.primary,
-          borderTopColor: colors.surface.secondary,
-          borderTopWidth: 1,
-          height: 80,
-          paddingBottom: 20,
-          paddingTop: 10,
+          backgroundColor: '#000000', // Fundo preto total
+          borderTopColor: '#000000', // Borda superior também preta
+          borderTopWidth: 0,
+          height: 110, // Aumentado para 100 para dar ainda mais espaço
+          paddingBottom: 45, // Aumentado para 30 para melhor posicionamento
+          paddingTop: 15
+          
+          , // Aumentado para 15 para melhor distribuição
         },
         tabBarActiveTintColor: colors.primary[500],
         tabBarInactiveTintColor: colors.text.tertiary,
@@ -41,41 +44,30 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="trade"
+        name="operation"
         options={{
-          title: 'Operação',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons 
-              name="swap-horizontal" 
-              size={size + 4} 
-              color={color} 
-            />
-          ),
-          tabBarButton: (props) => (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ 
-                width: 64, 
-                height: 64, 
-                backgroundColor: colors.primary[500], 
-                borderRadius: 32, 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5
-              }}>
-                <Ionicons 
-                  name="swap-horizontal" 
-                  size={28} 
-                  color="white" 
-                />
-              </View>
+          title: '',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={{ 
+              width: 56,
+              height: 56,
+              backgroundColor: focused ? colors.primary[500] : 'transparent',
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: focused ? colors.primary[500] : colors.primary[500],
+            }}>
+              <Ionicons 
+                name="swap-horizontal"
+                size={24}
+                color={focused ? '#ffffff' : colors.primary[500]}
+              />
             </View>
           ),
         }}
       />
+
       <Tabs.Screen
         name="news"
         options={{
@@ -90,7 +82,7 @@ export default function TabLayout() {
         options={{
           title: 'Estudos',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="library" size={size} color={color} />
+            <Ionicons name="book" size={size} color={color} />
           ),
         }}
       />

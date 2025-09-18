@@ -5,9 +5,10 @@ interface TradingViewChartProps {
   symbol: string;
   interval: string;
   height: number;
+  data?: any[];
 }
 
-export function TradingViewChart({ symbol, interval, height }: TradingViewChartProps) {
+export function TradingViewChart({ symbol, interval, height, data }: TradingViewChartProps) {
   return (
     <View style={[styles.container, { height }]}>
       <Text style={styles.title}>📊 {symbol}</Text>

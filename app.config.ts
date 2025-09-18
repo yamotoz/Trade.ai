@@ -8,6 +8,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
   assetBundlePatterns: ['**/*'],
+  sdkVersion: '54.0.0',
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.tradeai.app',

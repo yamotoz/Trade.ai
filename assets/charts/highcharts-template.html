@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade.ai - Gráfico de Preços</title>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/accessibility.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #container {
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #4a9eff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #4a9eff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="loading">Carregando gráfico...</div>
+    </div>
+
+    <script>
+        // Função para gerar dados mockados de candlestick
+        function generateMockData(symbol, days = 30) {
+            const data = [];
+            const volume = [];
+            let basePrice = 100;
+            
+            // Preços base por símbolo
+            const basePrices = {
+                'BTC': 45000,
+                'PETR4': 32.50,
+                'VALE3': 68.75,
+                'ITUB4': 28.90,
+                'BBDC4': 22.15,
+                'ABEV3': 12.80,
+                'WEGE3': 45.20,
+                'RENT3': 18.75,
+                'LREN3': 15.30
+            };
+            
+            basePrice = basePrices[symbol] || 100;
+            
+            for (let i = days; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                
+                // Simular variação de preço
+                const variation = (Math.random() - 0.5) * 0.1; // ±5% de variação
+                const open = basePrice * (1 + variation);
+                const close = open * (1 + (Math.random() - 0.5) * 0.08); // ±4% de variação do fechamento
+                const high = Math.max(open, close) * (1 + Math.random() * 0.03); // Máximo 3% acima
+                const low = Math.min(open, close) * (1 - Math.random() * 0.03); // Máximo 3% abaixo
+                
+                // Volume simulado
+                const vol = Math.floor(Math.random() * 1000000) + 100000;
+                
+                data.push([
+                    date.getTime(),
+                    Math.round(open * 100) / 100,
+                    Math.round(high * 100) / 100,
+                    Math.round(low * 100) / 100,
+                    Math.round(close * 100) / 100
+                ]);
+                
+                volume.push([
+                    date.getTime(),
+                    vol
+                ]);
+                
+                basePrice = close; // Próximo preço baseado no fechamento anterior
+            }
+            
+            return { data, volume };
+        }
+
+        // Função para criar o gráfico
+        function createChart(symbol, title) {
+            const mockData = generateMockData(symbol);
+            
+            Highcharts.stockChart('container', {
+                chart: {
+                    backgroundColor: 'transparent',
+                    style: {
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }
+                },
+                
+                title: {
+                    text: `${symbol} - ${title}`,
+                    style: {
+                        color: '#ffffff',
+                        fontSize: '18px',
+                        fontWeight: '600'
+                    },
+                    align: 'left',
+                    margin: 20
+                },
+                
+                subtitle: {
+                    text: 'Dados em tempo real',
+                    style: {
+                        color: '#4a9eff',
+                        fontSize: '12px'
+                    },
+                    align: 'left'
+                },
+                
+                rangeSelector: {
+                    enabled: false
+                },
+                
+                navigator: {
+                    enabled: false
+                },
+                
+                scrollbar: {
+                    enabled: false
+                },
+                
+                xAxis: {
+                    type: 'datetime',
+                    labels: {
+                        style: {
+                            color: '#888888',
+                            fontSize: '11px'
+                        }
+                    },
+                    lineColor: '#333333',
+                    tickColor: '#333333'
+                },
+                
+                yAxis: [{
+                    title: {
+                        text: 'Preço',
+                        style: {
+                            color: '#ffffff',
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        style: {
+                            color: '#888888',
+                            fontSize: '11px'
+                        },
+                        formatter: function() {
+                            return 'R$ ' + this.value.toFixed(2);
+                        }
+                    },
+                    gridLineColor: '#222222',
+                    lineColor: '#333333'
+                }, {
+                    title: {
+                        text: 'Volume',
+                        style: {
+                            color: '#ffffff',
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        style: {
+                            color: '#888888',
+                            fontSize: '11px'
+                        }
+                    },
+                    gridLineColor: '#222222',
+                    lineColor: '#333333',
+                    top: '75%',
+                    height: '25%',
+                    offset: 0
+                }],
+                
+                plotOptions: {
+                    candlestick: {
+                        color: '#ff4757',
+                        upColor: '#2ed573',
+                        lineColor: '#ff4757',
+                        upLineColor: '#2ed573',
+                        dataLabels: {
+                            enabled: false
+                        }
+                    },
+                    column: {
+                        color: '#4a9eff',
+                        borderColor: 'transparent'
+                    }
+                },
+                
+                series: [{
+                    type: 'candlestick',
+                    name: symbol,
+                    data: mockData.data,
+                    color: '#ff4757',
+                    upColor: '#2ed573',
+                    lineColor: '#ff4757',
+                    upLineColor: '#2ed573',
+                    tooltip: {
+                        pointFormatter: function() {
+                            return `<span style="color:${this.color}">●</span> ${this.series.name}: 
+                                <b>Abertura:</b> R$ ${this.open.toFixed(2)}<br/>
+                                <b>Máxima:</b> R$ ${this.high.toFixed(2)}<br/>
+                                <b>Mínima:</b> R$ ${this.low.toFixed(2)}<br/>
+                                <b>Fechamento:</b> R$ ${this.close.toFixed(2)}`;
+                        }
+                    }
+                }, {
+                    type: 'column',
+                    name: 'Volume',
+                    data: mockData.volume,
+                    yAxis: 1,
+                    color: '#4a9eff',
+                    tooltip: {
+                        pointFormatter: function() {
+                            return `<span style="color:${this.color}">●</span> Volume: <b>${this.y.toLocaleString()}</b>`;
+                        }
+                    }
+                }],
+                
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    borderColor: '#4a9eff',
+                    borderRadius: 8,
+                    style: {
+                        color: '#ffffff',
+                        fontSize: '12px'
+                    },
+                    shared: true,
+                    split: false
+                },
+                
+                legend: {
+                    enabled: false
+                },
+                
+                credits: {
+                    enabled: false
+                },
+                
+                exporting: {
+                    enabled: false
+                }
+            });
+        }
+
+        // Função para receber dados do React Native
+        function updateChart(symbol, title, data) {
+            if (data && data.length > 0) {
+                // Se dados reais foram fornecidos, usar eles
+                const chart = Highcharts.charts[0];
+                if (chart) {
+                    chart.series[0].setData(data);
+                }
+            } else {
+                // Caso contrário, usar dados mockados
+                createChart(symbol, title);
+            }
+        }
+
+        // Escutar mensagens do React Native
+        window.addEventListener('message', function(event) {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.type === 'updateChart') {
+                    updateChart(message.symbol, message.title, message.data);
+                }
+            } catch (e) {
+                console.log('Erro ao processar mensagem:', e);
+            }
+        });
+
+        // Inicializar com dados padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aguardar um pouco para garantir que o container esteja pronto
+            setTimeout(() => {
+                createChart('BTC', 'Bitcoin');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

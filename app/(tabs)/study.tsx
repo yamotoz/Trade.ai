@@ -29,10 +29,10 @@ export default function StudyScreen() {
   const categories = [
     { id: 'all', label: 'Todas', icon: 'grid' },
     { id: 'technical', label: 'Análise Técnica', icon: 'trending-up' },
-    { id: 'fundamental', label: 'Análise Fundamental', icon: 'bar-chart' }, // corrigido
-    { id: 'psychology', label: 'Psicologia', icon: 'bulb' }, // corrigido
+    { id: 'fundamental', label: 'Análise Fundamental', icon: 'analytics' },
+    { id: 'psychology', label: 'Psicologia', icon: 'person' },
     { id: 'risk', label: 'Gestão de Risco', icon: 'shield' },
-    { id: 'strategy', label: 'Estratégias', icon: 'compass' },
+    { id: 'strategy', label: 'Estratégias', icon: 'navigate' },
   ];
 
   const filteredStudies = useMemo(() => {
@@ -182,7 +182,7 @@ export default function StudyScreen() {
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="library-outline" size={64} color={colors.text.tertiary} />
+            <Ionicons name="book-outline" size={64} color={colors.text.tertiary} />
             <Text style={[styles.emptyStateTitle, { color: colors.text.tertiary }]}>
               Nenhum conteúdo encontrado
             </Text>
